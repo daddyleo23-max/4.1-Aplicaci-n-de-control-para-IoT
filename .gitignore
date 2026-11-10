@@ -1,0 +1,6 @@
+# Credenciales de desarrollo: jamás publicar
+js/auth.local.js
+.venv-ws/
+.env
+.env.*
+!.env.example

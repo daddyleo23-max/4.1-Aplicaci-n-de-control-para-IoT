@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#171a1b" />
+    <meta name="description" content="Panel web de control para Montacargas IoT." />
+    <title>Control IoT · Montacargas</title>
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="./css/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#inicio" aria-label="Control IoT, inicio">
+          <span class="brand-mark" aria-hidden="true">⬡</span>
+          <span><strong>TRASPEED</strong><small>CONTROL IoT</small></span>
+        </a>
+        <span class="vehicle-chip"><span class="vehicle-dot"></span><span id="vehicle-name">Montacargas IoT</span></span>
+      </header>
+
+      <main id="inicio" class="container-fluid page-wrap">
+        <section class="intro-row" aria-labelledby="page-title">
+          <div>
+            <p class="eyebrow">MANDO TRASPEED <span>·</span> VEHÍCULO 01</p>
+            <h1 id="page-title">Control del <span>montacargas</span></h1>
+            <p class="intro-copy">Tu control de 2.4 GHz, ahora en la web</p>
+          </div>
+          <div class="connection-summary" aria-label="Estado de conectividad">
+            <span class="summary-pulse" aria-hidden="true"></span>
+            <span id="overall-status">Conectando servicios</span>
+          </div>
+        </section>
+
+        <section class="status-grid" aria-label="Indicadores de conectividad">
+          <article class="status-card" id="status-ws" data-state="checking">
+            <span class="status-icon" aria-hidden="true">↔</span>
+            <div><span class="status-label">WebSocket WSS</span><strong class="status-value">Conectando</strong><small class="status-detail">Sesión de este navegador</small></div>
+            <span class="status-led" aria-hidden="true"></span>
+          </article>
+          <article class="status-card" id="status-api" data-state="checking">
+            <span class="status-icon" aria-hidden="true">⌘</span>
+            <div><span class="status-label">Servidor AWS · API REST</span><strong class="status-value">Comprobando</strong><small class="status-detail">Disponibilidad del servicio de salud</small></div>
+            <span class="status-led" aria-hidden="true"></span>
+          </article>
+          <article class="status-card" id="status-db" data-state="unknown">
+            <span class="status-icon" aria-hidden="true">▤</span>
+            <div><span class="status-label">Amazon RDS</span><strong class="status-value">Sin verificar</strong><small class="status-detail">Diagnóstico del backend</small></div>
+            <span class="status-led" aria-hidden="true"></span>
+          </article>
+        </section>
+
+        <section class="panel commands-panel" aria-labelledby="commands-title">
+          <div class="panel-heading">
+            <div><p class="eyebrow">01 / CONTROL 2.4 GHz</p><h2 id="commands-title">Mando del montacargas</h2></div>
+            <span class="catalog-count" id="command-count">Catálogo · pendiente</span>
+          </div>
+          <div class="remote-indicators" aria-label="Indicadores ilustrativos del mando; el ESP32 no reporta su estado">
+            <span class="indicator-caption">ESTADO DEL CONTROL <small>referencia visual · sin telemetría física</small></span>
+            <span class="remote-led led-red" aria-label="Indicador rojo: velocidad"></span><span class="remote-led led-green" aria-label="Indicador verde: conexión o velocidad normal"></span><span class="remote-led led-blue" aria-label="Indicador azul: modo cruce"></span>
+            <span class="indicator-caption indicator-legend">VELOCIDAD <i>·</i> CONEXIÓN <i>·</i> CRUCE</span>
+          </div>
+          <section class="auth-panel" id="auth-panel" aria-label="Autorización de comandos" hidden>
+            <div class="auth-copy"><strong>Autorizar comandos</strong><small id="auth-help">La clave se conserva solo en memoria durante esta pestaña.</small></div>
+            <div class="auth-entry">
+              <label class="visually-hidden" for="api-key-input">Clave API</label>
+              <input id="api-key-input" type="password" autocomplete="new-password" autocapitalize="off" spellcheck="false" placeholder="Introduce tu API key">
+              <button id="authorize-button" type="button">Autorizar</button>
+              <button id="forget-key-button" type="button" hidden>Olvidar</button>
+            </div>
+            <p id="auth-status" role="status" aria-live="polite">No se ha guardado ninguna clave.</p>
+          </section>
+          <div class="remote-shell">
+            <div class="remote-brand-band" aria-hidden="true">TRASPEED <small>2.4 GHz CONTROL</small></div>
+            <div class="command-grid remote-grid" id="command-grid"><div class="empty-state">Conectando con el catálogo de comandos…</div></div>
+            <div class="remote-safety">
+              <span id="action-feedback" role="status" aria-live="polite">Esperando conexión con la API</span>
+              <button class="stop-button" id="stop-button" type="button"><span aria-hidden="true">■</span> DETENER</button>
+            </div>
+          </div>
+          <p class="safety-note remote-note"><span aria-hidden="true">ⓘ</span> La aceptación de la API confirma la solicitud; no confirma movimiento físico.</p>
+        </section>
+
+        <div class="control-layout">
+          <section class="panel drive-panel" aria-labelledby="drive-title">
+            <div class="panel-heading">
+              <div><p class="eyebrow">02 / JOYSTICK</p><h2 id="drive-title">Dirección táctil</h2></div>
+              <span class="live-tag"><span></span> MANDO</span>
+            </div>
+            <div class="drive-content">
+              <div class="joystick-wrap">
+                <div class="joystick" id="joystick" role="application" aria-label="Joystick. Arrastra para seleccionar avanzar, retroceder, izquierda o derecha. Suelta para detener." tabindex="0">
+                  <span class="joystick-label label-up">AVANZAR</span><span class="joystick-label label-down">ATRÁS</span>
+                  <span class="joystick-label label-left">IZQUIERDA</span><span class="joystick-label label-right">DERECHA</span>
+                  <span class="joystick-cross" aria-hidden="true"></span>
+                  <span class="joystick-knob" id="joystick-knob"><span></span></span>
+                </div>
+                <p class="joystick-hint">Arrastra el mando · suelta para detener</p>
+              </div>
+              <div class="drive-side">
+                <div class="direction-readout"><span class="readout-label">ORDEN ACTUAL</span><strong id="current-command">EN ESPERA</strong></div>
+                <p class="safety-note">Arrastra y suelta para regresar al centro. Al soltar tras mover, se solicita DETENER.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel demo-panel" aria-labelledby="demo-title">
+            <div class="panel-heading">
+              <div><p class="eyebrow">03 / AUTOMATIZACIÓN</p><h2 id="demo-title">Secuencia DEMO</h2></div>
+              <span class="panel-number">02</span>
+            </div>
+            <p class="section-copy">Elige una secuencia guardada para este vehículo.</p>
+            <label class="form-label" for="demo-select">SECUENCIA DISPONIBLE</label>
+            <select class="form-select demo-select" id="demo-select" disabled><option value="">Cargando DEMOs…</option></select>
+            <div class="demo-actions">
+              <button class="demo-start" id="demo-start" type="button" disabled><span aria-hidden="true">▶</span> Iniciar secuencia</button>
+              <button class="demo-cancel" id="demo-cancel" type="button" disabled>Cancelar</button>
+            </div>
+            <div class="demo-progress" id="demo-status" role="status" aria-live="polite"><span class="progress-mark" aria-hidden="true">◎</span><span>Sin secuencia activa</span></div>
+            <p class="safety-note demo-note">Los tiempos y el orden se ejecutan en el servidor. La DEMO no se reproduce desde el navegador.</p>
+          </section>
+        </div>
+
+        <section class="activity-line" aria-label="Último evento recibido">
+          <span class="activity-icon" aria-hidden="true">⌁</span>
+          <div><span class="activity-label">ÚLTIMA ACTUALIZACIÓN EN TIEMPO REAL</span><p id="last-event">Esperando el estado inicial del vehículo…</p></div>
+          <time id="last-event-time"></time>
+        </section>
+      </main>
+
+      <footer class="footer"><span>CONTROL IoT <span class="footer-separator">/</span> MONTACARGAS</span><span>Desarrollado por <strong>León Hernández Iran Pascual</strong> · 2026</span></footer>
+    </div>
+    <script type="module" src="./js/main.js"></script>
+  </body>
+</html>
