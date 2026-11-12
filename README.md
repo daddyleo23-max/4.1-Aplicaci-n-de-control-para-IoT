@@ -23,6 +23,33 @@ En una consulta al servidor activo se confirmó el catálogo de 13 registros par
 
 El sketch ESP32 compartido asigna pulsos temporizados a los comandos. En ese archivo `POWER` está deshabilitado, `DEMO` debe iniciarse mediante su endpoint dedicado y las salidas se liberan al recibir DETENER o perder WSS/Wi-Fi. La interfaz marca POWER como no verificado para ese firmware y no presenta luces o velocidad como estado físico confirmado. El sketch aún no se ha probado en el circuito.
 
+## Ampliación 4.2: MONITOREO
+
+La práctica 4.2 amplía esta misma aplicación y repositorio con las vistas CONTROL y MONITOREO. CONTROL mantiene el mando, DETENER y DEMO. MONITOREO consulta el estado e historial mediante los GET existentes y comparte una sola sesión WSS con CONTROL. No requiere conexión física del ESP32 ni cambios en FastAPI, RDS o procedimientos almacenados.
+
+### Módulos
+
+- `index.html`: estructura común, indicadores, navegación CONTROL/MONITOREO y tabla semántica.
+- `js/config.js`: URL de API, WSS, ID de vehículo y timeout.
+- `js/api-client.js`: cliente Fetch existente; incluye `vehicleState()` (`GET /vehiculos/{id}/estado`) y `vehicleHistory()` (`GET /vehiculos/{id}/historial`).
+- `js/websocket-client.js`: conexión WSS única, reconexión progresiva y distribución de eventos a ambas vistas.
+- `js/monitoring.js`: sincronización inicial y al volver a la vista; actualiza la tarjeta con estado/eventos del mismo vehículo y reconcilia la tabla mediante historial REST solo tras movimiento individual.
+- `js/connection-status.js`: indicadores independientes de salud de API y diagnóstico RDS; WSS indica la sesión del navegador, no presencia física.
+
+### Contratos confirmados
+
+- Estado: `GET /vehiculos/1/estado`, campos observados `id_vehiculo`, `vehiculo`, `id_comando`, `comando`, `codigo`, `conectado`, `fecha_actualizacion`.
+- Historial: `GET /vehiculos/1/historial`, hasta diez movimientos con `id_historial`, `id_vehiculo`, `comando`, `codigo`, `fecha_hora` y `origen`.
+- WSS: `wss://34.194.45.28/ws/vehiculos/1`. Los eventos `movimiento` desencadenan reconciliación REST. Eventos DEMO pueden actualizar la tarjeta, no las filas individuales.
+- Los GET de estado e historial devuelven fechas sin sufijo de zona. Se contrastó `fecha_actualizacion` con el evento WSS del mismo instante: el valor REST corresponde a UTC sin sufijo, por lo que el frontend lo interpreta como UTC y lo presenta en `America/Mexico_City`. Los eventos WSS con offset se convierten desde el offset recibido.
+- RDS se marca disponible solo con el diagnóstico real de `/health/db`. Ninguna vista convierte una respuesta HTTP o evento WSS en confirmación de movimiento físico.
+
+### Ejecución y comprobación
+
+Desde la carpeta del proyecto inicia un servidor local compatible con módulos ES usando `python3 -m http.server 8080 --bind 127.0.0.1` y abre `http://127.0.0.1:8080`. El origen `127.0.0.1:8080` está permitido por CORS; otro puerto como `8083` puede mostrar la interfaz, pero la API bloqueará las consultas del navegador. También se puede publicar el mismo repositorio en GitHub Pages. Entra en MONITOREO para cargar estado e historial; ejecuta un movimiento desde CONTROL u otra sesión WSS y comprueba que la tarjeta cambia y que la tabla se resincroniza desde la API. Prueba además historial vacío, más de diez registros, evento de otro vehículo, DEMO, pérdida y reconexión WSS, red móvil/escritorio y el cliente WSS independiente. Las pruebas físicas del ESP32 quedan fuera de 4.2.
+
+No se almacena API key en módulos públicos ni se necesita una clave para los GET de monitoreo. No publiques `js/auth.local.js`; está excluido por `.gitignore`. Las rutas de assets y módulos son relativas para GitHub Pages.
+
 ## Estructura
 
 ```text

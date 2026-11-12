@@ -39,6 +39,8 @@ export const api = {
   async root() { return (await request(config.apiHealthPath)).data; },
   async databaseHealth() { return (await request(config.databaseHealthPath)).data; },
   async vehicle() { return (await request(`/vehiculos/${config.vehicleId}`)).data; },
+  async vehicleState() { return (await request(`/vehiculos/${config.vehicleId}/estado`)).data; },
+  async vehicleHistory() { return (await request(`/vehiculos/${config.vehicleId}/historial`)).data; },
   async commands() { return (await request(`/vehiculos/${config.vehicleId}/comandos`)).data; },
   async demos() { return (await request(`/vehiculos/${config.vehicleId}/demos`)).data; },
   async move(idCommand) {

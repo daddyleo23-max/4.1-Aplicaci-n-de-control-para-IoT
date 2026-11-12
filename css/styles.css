@@ -195,3 +195,50 @@
   .speed-key,.light-sound-key{width:26px}
   .key-caption{font-size:5px}
 }
+
+/* Navegación entre CONTROL y MONITOREO (misma aplicación y conexión WSS). */
+.view-nav{display:flex;gap:7px;margin:0 0 12px;padding:4px;border:1px solid #343a37;border-radius:12px;background:#171a19;width:max-content;max-width:100%}
+.view-tab{min-width:120px;min-height:42px;padding:9px 18px;border:1px solid transparent;border-radius:9px;background:transparent;color:#aab4ae;font:700 10px var(--mono);letter-spacing:.12em;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.view-tab:hover{color:#fff2cb}
+.view-tab.is-active{border-color:#8c6928;background:#342b19;color:var(--yellow)}
+.view-tab:focus-visible,.refresh-button:focus-visible{outline:3px solid #f5c347;outline-offset:3px}
+.app-view[hidden]{display:none!important}
+.monitor-view{display:grid;gap:14px}
+.monitor-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 2px 2px}
+.monitor-heading h2{margin:0;color:#f4f2e9;font-size:clamp(20px,3vw,28px);letter-spacing:-.04em}
+.monitor-heading p:last-child{margin:6px 0 0;color:#9ba59f;font-size:12px}
+.refresh-button{display:flex;align-items:center;gap:8px;min-height:42px;padding:8px 13px;border:1px solid #514325;border-radius:9px;background:#282316;color:var(--yellow);font:600 10px var(--mono);cursor:pointer}
+.refresh-button:hover{background:#382f1d}
+.refresh-button:first-letter{font-size:19px}
+.latest-panel{display:grid;grid-template-columns:60px minmax(0,1fr);gap:17px;align-items:center;padding:clamp(17px,3vw,28px);border-color:#574720;background:linear-gradient(115deg,#23231d,#1b1f1e 58%)}
+.latest-icon{display:grid;place-items:center;width:54px;height:54px;border:1px solid #574720;border-radius:16px;background:#302818;color:var(--yellow);font-size:27px}
+.latest-content{min-width:0}
+.latest-content .eyebrow{margin:0 0 7px;color:#a6a28f;font-size:9px;letter-spacing:.15em}
+.latest-content h3{margin:0;color:#f6f3e8;font-size:clamp(20px,3.4vw,32px);font-weight:760;letter-spacing:-.04em;overflow-wrap:anywhere}
+.latest-content>p{margin:5px 0 10px;color:#c2c4bc;font-size:12px}
+.latest-meta{display:flex;flex-wrap:wrap;gap:5px 14px;color:#edc75c;font:11px var(--mono)}
+.latest-meta:empty{display:none}
+.latest-content small{display:block;margin-top:10px;color:#909b94;font-size:10px;line-height:1.45}
+.history-panel{padding:clamp(15px,2.5vw,23px)}
+.history-panel .panel-heading{margin-bottom:12px}
+.history-panel .panel-heading h2{font-size:clamp(17px,2.3vw,22px)}
+.history-message{margin:0;padding:18px 12px;border:1px dashed #39413d;border-radius:10px;color:#aab4ae;text-align:center;font-size:12px;line-height:1.5}
+.history-table-wrap{width:100%;overflow-x:auto;border:1px solid #343a37;border-radius:10px;scrollbar-color:#5a4a29 #1c201f}
+.history-table{width:100%;border-collapse:collapse;color:#e7e9e3;font-size:12px}
+.history-table th,.history-table td{padding:12px 14px;border-bottom:1px solid #303633;text-align:left;white-space:nowrap}
+.history-table thead{background:#222725;color:#aab4ae;font:10px var(--mono);letter-spacing:.09em;text-transform:uppercase}
+.history-table tbody tr:last-child th,.history-table tbody tr:last-child td{border-bottom:0}
+.history-table tbody tr:hover{background:#222725}
+.history-table tbody th{width:45px;color:var(--yellow);font:11px var(--mono)}
+.history-table td:nth-child(2){font-weight:650}
+.monitor-disclaimer{margin:0;padding:0 3px;color:#929d97;font-size:10px;line-height:1.5}
+.monitor-disclaimer span{margin-right:5px;color:var(--yellow)}
+@media(max-width:600px){
+  .view-nav{width:100%;margin-bottom:9px}.view-tab{flex:1;min-width:0;min-height:44px}
+  .monitor-view{gap:10px}.monitor-heading{align-items:flex-start;padding-top:4px}.monitor-heading p:last-child{max-width:36ch;font-size:10px}
+  .refresh-button{min-width:43px;justify-content:center;padding-inline:10px}.refresh-button span{display:none}
+  .latest-panel{grid-template-columns:42px minmax(0,1fr);gap:11px;padding:15px 12px}.latest-icon{width:40px;height:40px;border-radius:12px;font-size:21px}
+  .latest-content .eyebrow{font-size:7px;line-height:1.4}.latest-content>p{font-size:10px}.latest-meta{font-size:9px}.latest-content small{font-size:8px}
+  .history-panel{padding:13px 10px}.history-table{font-size:10px}.history-table th,.history-table td{padding:10px 8px}.history-table thead{font-size:8px}.history-table tbody th{width:28px}
+  .history-message{font-size:10px;padding:15px 8px}.monitor-disclaimer{font-size:8px}
+}

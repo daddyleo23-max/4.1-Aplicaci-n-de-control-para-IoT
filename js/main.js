@@ -5,6 +5,7 @@ import { elements, feedback, renderCommands, renderDemos, setDemoStatus, setEven
 import { connectWebSocket } from './websocket-client.js';
 import { bindJoystick } from './joystick.js';
 import { startHealthPolling } from './connection-status.js';
+import './monitoring.js';
 
 let commands = [];
 let stopCommand = null;
@@ -113,6 +114,7 @@ async function loadInitialData() {
   if (vehicleResult.status === 'fulfilled') {
     const vehicle = vehicleResult.value;
     document.querySelector('#vehicle-name').textContent = vehicle.nombre || `Vehículo ${config.vehicleId}`;
+    document.dispatchEvent(new CustomEvent('iot:vehicle-name', { detail: { name: vehicle.nombre || `Vehículo ${config.vehicleId}` } }));
     document.querySelector('.eyebrow').textContent = `MANDO 2.4 GHz · VEHÍCULO ${String(vehicle.id_vehiculo || config.vehicleId).padStart(2,'0')}`;
   } else feedback(`No se pudo cargar el vehículo: ${vehicleResult.reason.message}`);
   if (commandResult.status === 'fulfilled') {

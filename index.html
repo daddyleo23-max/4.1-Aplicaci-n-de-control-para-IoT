@@ -52,6 +52,12 @@
           </article>
         </section>
 
+        <nav class="view-nav" aria-label="Secciones de la aplicación">
+          <button class="view-tab is-active" id="tab-control" type="button" aria-controls="view-control" aria-pressed="true">CONTROL</button>
+          <button class="view-tab" id="tab-monitor" type="button" aria-controls="view-monitor" aria-pressed="false">MONITOREO</button>
+        </nav>
+
+        <section id="view-control" class="app-view" aria-labelledby="tab-control">
         <div class="control-layout">
         <section class="panel commands-panel" aria-labelledby="commands-title">
           <div class="panel-heading">
@@ -138,6 +144,36 @@
           <span class="activity-icon" aria-hidden="true">⌁</span>
           <div><span class="activity-label">ÚLTIMA ACTUALIZACIÓN EN TIEMPO REAL</span><p id="last-event">Esperando el estado inicial del vehículo…</p></div>
           <time id="last-event-time"></time>
+        </section>
+        </section>
+
+        <section id="view-monitor" class="app-view monitor-view" aria-labelledby="tab-monitor" hidden>
+          <div class="monitor-heading">
+            <div><p class="eyebrow">01 / OBSERVABILIDAD</p><h2>Monitoreo del vehículo</h2><p>Estado reportado y movimientos individuales confirmados por la API.</p></div>
+            <button id="monitor-refresh" class="refresh-button" type="button" aria-label="Actualizar estado e historial">↻ <span>Sincronizar</span></button>
+          </div>
+          <article class="panel latest-panel" aria-labelledby="latest-title" aria-live="polite">
+            <div class="latest-icon" aria-hidden="true">⌁</div>
+            <div class="latest-content">
+              <p class="eyebrow" id="latest-title">ÚLTIMO MOVIMIENTO O ESTADO REPORTADO</p>
+              <h3 id="monitor-latest-command">Cargando estado…</h3>
+              <p id="monitor-latest-vehicle">Montacargas IoT · Vehículo 1</p>
+              <div class="latest-meta"><span id="monitor-latest-code"></span><time id="monitor-latest-time"></time></div>
+              <small id="monitor-latest-source">Consultando la API…</small>
+            </div>
+          </article>
+          <section class="panel history-panel" aria-labelledby="history-title">
+            <div class="panel-heading"><div><p class="eyebrow">02 / PERSISTENCIA</p><h2 id="history-title">Últimos movimientos</h2></div><span id="history-count" class="catalog-count">Cargando…</span></div>
+            <p id="history-message" class="history-message" role="status" aria-live="polite">Consultando historial persistido…</p>
+            <div class="history-table-wrap" id="history-table-wrap" hidden>
+              <table class="history-table">
+                <caption class="visually-hidden">Hasta diez movimientos individuales persistidos del vehículo</caption>
+                <thead><tr><th scope="col">#</th><th scope="col">Movimiento</th><th scope="col">Fecha</th><th scope="col">Hora</th></tr></thead>
+                <tbody id="history-rows"></tbody>
+              </table>
+            </div>
+          </section>
+          <p class="monitor-disclaimer"><span aria-hidden="true">ⓘ</span> WSS confirma eventos recibidos por esta sesión. La API confirma solicitudes; el historial representa persistencia reportada por el backend. Ninguno confirma por sí solo movimiento físico.</p>
         </section>
       </main>
 
