@@ -24,8 +24,10 @@ function updateOverall() {
 }
 
 export function feedback(message, command = '') {
-  $('#action-feedback').textContent = message;
-  if (command) $('#current-command').textContent = command;
+  const action = $('#action-feedback');
+  if (action) action.textContent = message;
+  const current = $('#current-command');
+  if (current && command) current.textContent = command;
 }
 
 export function setEvent(message, timestamp = '') {
@@ -38,57 +40,137 @@ export function setEvent(message, timestamp = '') {
   }
 }
 
-export function setDemoStatus(message) { $('#demo-status').lastElementChild.textContent = message; }
-
-const glyphs = new Map([
-  ['ADELANTE','▲'],['AVANZAR','▲'],['ATRAS','▼'],['ATRÁS','▼'],['RETROCEDER','▼'],['IZQUIERDA','◀'],['GIRAR IZQUIERDA','◀'],['DERECHA','▶'],['GIRAR DERECHA','▶'],['SUBIR','⬆'],['BAJAR','⬇'],['DETENER','■'],['DEMO','⟳▶'],['LUCES','☼'],['LUZ','☼'],['SONIDO','◖))'],['CLAXON','◖))'],['VELOCIDAD','%'],['MODO_CRUCE','◴'],['CRUCE','◴'],['POWER','⏻'],
-]);
-export function commandGlyph(name) {
-  const upper = name.toLocaleUpperCase('es-MX');
-  for (const [key, glyph] of glyphs) if (upper.includes(key)) return glyph;
-  return '◆';
+export function setDemoStatus(message) {
+  const status = $('#demo-status');
+  if (status?.lastElementChild) status.lastElementChild.textContent = message;
 }
 
-export function renderCommands(commands, { onCommand, onDemo }) {
-  const grid = $('#command-grid');
-  grid.replaceChildren();
-  $('#command-count').textContent = `${commands.length} comandos en catálogo`;
-  const enabled = (item) => item.activo !== false && item.activo !== 0;
-  const positions = new Map([
-    ['ADELANTE','key-forward'], ['SUBIR_HORQUILLA','key-fork-up'], ['VELOCIDAD','key-speed'],
-    ['GIRAR_IZQUIERDA','key-left'], ['GIRAR_DERECHA','key-right'], ['LUCES','key-lights'],
-    ['POWER','key-power'], ['ATRAS','key-back'], ['BAJAR_HORQUILLA','key-fork-down'],
-    ['DEMO','key-demo'], ['MODO_CRUCE','key-cross'], ['SONIDO','key-sound'],
-  ]);
-  const shortLabels = new Map([
-    ['ADELANTE','ADELANTE'], ['ATRAS','ATRÁS'], ['SUBIR_HORQUILLA','SUBIR'], ['BAJAR_HORQUILLA','BAJAR'],
-    ['GIRAR_IZQUIERDA','IZQUIERDA'], ['GIRAR_DERECHA','DERECHA'], ['VELOCIDAD','VELOCIDAD'],
-    ['LUCES','LUCES'], ['POWER','POWER'], ['DEMO','DEMO'], ['MODO_CRUCE','CRUCE'], ['SONIDO','SONIDO'],
-  ]);
-  const addButton = (command, position = 'key-extra') => {
-    const name = command.nombre?.trim().toUpperCase() || '';
-    const firmwareBlocked = name === 'POWER';
-    const button = document.createElement('button');
-    button.type = 'button'; button.className = `command-button remote-key ${position}${firmwareBlocked ? ' command-unverified' : ''}`;
-    button.disabled = !enabled(command) || firmwareBlocked;
-    button.setAttribute('aria-label', firmwareBlocked ? 'POWER no está habilitado en el firmware compartido' : name === 'DEMO' ? 'Iniciar la DEMO seleccionada' : `Enviar comando ${command.nombre}`);
-    button.title = firmwareBlocked ? 'No habilitado en el sketch del ESP32' : command.descripcion || command.nombre;
-    const glyph = document.createElement('span'); glyph.className = 'command-glyph'; glyph.textContent = commandGlyph(command.nombre || '');
-    const label = document.createElement('span'); label.className = 'command-name'; label.textContent = shortLabels.get(name) || command.nombre || `Comando ${command.id_comando}`;
-    button.append(glyph, label);
-    if (!firmwareBlocked && enabled(command)) {
-      button.addEventListener('click', () => name === 'DEMO' ? onDemo(command) : onCommand(command));
-    }
-    grid.append(button);
-  };
-  const byName = new Map(commands.map((item) => [item.nombre?.trim().toUpperCase(), item]));
-  for (const [name, position] of positions) {
-    const command = byName.get(name);
-    if (command) addButton(command, position);
+const normalize = (text = '') => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+const available = (command) => Boolean(command && command.activo !== false && command.activo !== 0);
+
+function findCommand(commands, aliases) {
+  const accepted = aliases.map(normalize);
+  return commands.find((command) => {
+    if (!available(command)) return false;
+    const name = normalize(command.nombre || '');
+    return accepted.some((alias) => name === alias || name.includes(alias));
+  }) || null;
+}
+
+function bindSingleCommand(button, commands, aliases, onCommand, unavailableText) {
+  if (!button) return null;
+  const command = findCommand(commands, aliases);
+  button.disabled = !command;
+  button.dataset.available = String(Boolean(command));
+  if (!command) {
+    button.title = unavailableText || `No hay un comando activo para: ${aliases[0]}.`;
+    return null;
   }
-  const knownNames = new Set([...positions.keys(), 'DETENER']);
-  commands.filter((item) => !knownNames.has(item.nombre?.trim().toUpperCase())).forEach((command) => addButton(command));
-  if (!grid.children.length) grid.innerHTML = '<div class="empty-state">No hay comandos disponibles en el catálogo.</div>';
+  button.title = command.descripcion || command.nombre;
+  button.addEventListener('click', () => onCommand(command));
+  return command;
+}
+
+function bindTimedButton(button, shortCommand, longCommand, onShort, onLong, thresholdMs = 550) {
+  if (!button) return;
+  let startedAt = null;
+  let measuredDuration = null;
+
+  const start = (event) => {
+    if (event.type === 'pointerdown' && event.button !== 0) return;
+    if (startedAt !== null) return;
+    startedAt = performance.now();
+    button.dataset.pressed = 'true';
+    if (event.type === 'pointerdown' && button.setPointerCapture) {
+      try { button.setPointerCapture(event.pointerId); } catch { /* El dispositivo no permite captura. */ }
+    }
+  };
+  const end = (event) => {
+    if (startedAt === null) return;
+    measuredDuration = performance.now() - startedAt;
+    startedAt = null;
+    delete button.dataset.pressed;
+    if (event?.type === 'pointerup' && button.releasePointerCapture) {
+      try { button.releasePointerCapture(event.pointerId); } catch { /* La captura ya se liberó. */ }
+    }
+  };
+
+  button.addEventListener('pointerdown', start);
+  button.addEventListener('pointerup', end);
+  button.addEventListener('pointercancel', end);
+  button.addEventListener('lostpointercapture', end);
+  button.addEventListener('keydown', (event) => {
+    if (event.repeat || ![' ', 'Enter'].includes(event.key)) return;
+    start(event);
+  });
+  button.addEventListener('keyup', (event) => {
+    if ([' ', 'Enter'].includes(event.key)) end(event);
+  });
+  button.addEventListener('blur', () => end());
+  button.addEventListener('click', () => {
+    const longPress = measuredDuration !== null && measuredDuration >= thresholdMs;
+    measuredDuration = null;
+    if (longPress) onLong(longCommand);
+    else onShort(shortCommand);
+  });
+}
+
+export function renderCommands(commands, { onCommand, onDemo, onUnavailable }) {
+  const activeCount = commands.filter(available).length;
+  $('#command-count').textContent = `${activeCount} comandos activos · API`;
+
+  const bindings = [
+    [$('#key-speed'), ['VELOCIDAD', 'SPEED']],
+    [$('#key-fork-up'), ['SUBIR_HORQUILLA', 'SUBIR', 'RISE', 'LIFT UP']],
+    [$('#key-fork-down'), ['BAJAR_HORQUILLA', 'BAJAR', 'LOWER']],
+  ];
+  for (const [button, aliases] of bindings) bindSingleCommand(button, commands, aliases, onCommand);
+
+  const demoCommand = findCommand(commands, ['DEMO', 'AUTO DEMO']);
+  const demoButton = $('#key-demo');
+  if (demoButton) {
+    demoButton.disabled = !demoCommand;
+    demoButton.dataset.available = String(Boolean(demoCommand));
+    demoButton.title = demoCommand ? 'Iniciar la secuencia DEMO seleccionada.' : 'La función DEMO no aparece activa en el catálogo.';
+    if (demoCommand) demoButton.addEventListener('click', () => onDemo(demoCommand));
+  }
+
+  const horn = findCommand(commands, ['SONIDO', 'CLAXON', 'HORN']);
+  const lights = findCommand(commands, ['LUCES', 'LUZ', 'LIGHTS', 'LIGHT']);
+  // SONIDO se conserva como claxon. La música requiere un comando propio porque el firmware
+  // recibe un único id_comando y no puede inferir qué control físico originó el mismo código.
+  const music = findCommand(commands, ['MUSICA', 'MUSIC']);
+  const power = findCommand(commands, ['POWER', 'ENCENDER']);
+  const center = $('#key-power-horn');
+  if (center) {
+    center.disabled = !horn;
+    center.dataset.available = String(Boolean(horn));
+    center.title = power
+      ? 'Pulsación corta: claxon. Pulsación larga: encender (pendiente de habilitar en el firmware).'
+      : 'Pulsación corta: claxon. Pulsación larga: encender (comando no disponible).';
+    bindTimedButton(center, horn, power,
+      (command) => command ? onCommand(command) : onUnavailable('El claxon no está activo en el catálogo.'),
+      () => onUnavailable('Encender desde el botón central todavía no está habilitado en el firmware.'));
+  }
+
+  const combined = $('#key-light-sound');
+  if (combined) {
+    const shortAction = lights;
+    const longAction = music;
+    combined.disabled = !shortAction && !longAction;
+    combined.dataset.available = String(Boolean(shortAction || longAction));
+    combined.dataset.longAvailable = String(Boolean(longAction));
+    combined.title = longAction
+      ? 'Pulsación corta: luces. Pulsación larga: música.'
+      : 'Pulsación corta: luces. Música todavía no tiene un comando separado en el catálogo.';
+    bindTimedButton(combined, shortAction, longAction,
+      (command) => command ? onCommand(command) : onUnavailable('Luces no está activo en el catálogo.'),
+      (command) => command ? onCommand(command) : onUnavailable('Música todavía no tiene un comando separado en el catálogo; no se envió una orden.'));
+  }
+
+  document.querySelectorAll('[data-stick-axis]').forEach((stick) => {
+    stick.dataset.ready = String(commands.length > 0);
+  });
 }
 
 export function renderDemos(demos) {
@@ -103,4 +185,10 @@ export function renderDemos(demos) {
   select.addEventListener('change', () => { $('#demo-start').disabled = !select.value; });
 }
 
-export const elements = { joystick: $('#joystick'), knob: $('#joystick-knob'), stop: $('#stop-button'), demoSelect: $('#demo-select'), demoStart: $('#demo-start'), demoCancel: $('#demo-cancel') };
+export const elements = {
+  sticks: [...document.querySelectorAll('[data-stick-axis]')],
+  stop: $('#stop-button'),
+  demoSelect: $('#demo-select'),
+  demoStart: $('#demo-start'),
+  demoCancel: $('#demo-cancel'),
+};

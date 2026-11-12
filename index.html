@@ -16,7 +16,7 @@
       <header class="topbar">
         <a class="brand" href="#inicio" aria-label="Control IoT, inicio">
           <span class="brand-mark" aria-hidden="true">⬡</span>
-          <span><strong>TRASPEED</strong><small>CONTROL IoT</small></span>
+          <span><strong>MODEL</strong><small>CONTROL IoT</small></span>
         </a>
         <span class="vehicle-chip"><span class="vehicle-dot"></span><span id="vehicle-name">Montacargas IoT</span></span>
       </header>
@@ -24,9 +24,9 @@
       <main id="inicio" class="container-fluid page-wrap">
         <section class="intro-row" aria-labelledby="page-title">
           <div>
-            <p class="eyebrow">MANDO TRASPEED <span>·</span> VEHÍCULO 01</p>
+            <p class="eyebrow">MANDO 2.4 GHz <span>·</span> VEHÍCULO 01</p>
             <h1 id="page-title">Control del <span>montacargas</span></h1>
-            <p class="intro-copy">Tu control de 2.4 GHz, ahora en la web</p>
+            <p class="intro-copy">El control de dos joysticks, adaptado a la web</p>
           </div>
           <div class="connection-summary" aria-label="Estado de conectividad">
             <span class="summary-pulse" aria-hidden="true"></span>
@@ -52,15 +52,11 @@
           </article>
         </section>
 
+        <div class="control-layout">
         <section class="panel commands-panel" aria-labelledby="commands-title">
           <div class="panel-heading">
-            <div><p class="eyebrow">01 / CONTROL 2.4 GHz</p><h2 id="commands-title">Mando del montacargas</h2></div>
-            <span class="catalog-count" id="command-count">Catálogo · pendiente</span>
-          </div>
-          <div class="remote-indicators" aria-label="Indicadores ilustrativos del mando; el ESP32 no reporta su estado">
-            <span class="indicator-caption">ESTADO DEL CONTROL <small>referencia visual · sin telemetría física</small></span>
-            <span class="remote-led led-red" aria-label="Indicador rojo: velocidad"></span><span class="remote-led led-green" aria-label="Indicador verde: conexión o velocidad normal"></span><span class="remote-led led-blue" aria-label="Indicador azul: modo cruce"></span>
-            <span class="indicator-caption indicator-legend">VELOCIDAD <i>·</i> CONEXIÓN <i>·</i> CRUCE</span>
+            <div><p class="eyebrow">01 / MANDO 2.4 GHz</p><h2 id="commands-title">Control del montacargas</h2></div>
+            <span class="catalog-count" id="command-count">Cargando funciones…</span>
           </div>
           <section class="auth-panel" id="auth-panel" aria-label="Autorización de comandos" hidden>
             <div class="auth-copy"><strong>Autorizar comandos</strong><small id="auth-help">La clave se conserva solo en memoria durante esta pestaña.</small></div>
@@ -73,42 +69,57 @@
             <p id="auth-status" role="status" aria-live="polite">No se ha guardado ninguna clave.</p>
           </section>
           <div class="remote-shell">
-            <div class="remote-brand-band" aria-hidden="true">TRASPEED <small>2.4 GHz CONTROL</small></div>
-            <div class="command-grid remote-grid" id="command-grid"><div class="empty-state">Conectando con el catálogo de comandos…</div></div>
+            <svg class="icon-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <symbol id="icon-up" viewBox="0 0 24 24"><path d="M12 3 4.5 12h4.7v8h5.6v-8h4.7L12 3Z"/></symbol>
+              <symbol id="icon-down" viewBox="0 0 24 24"><path d="M12 21 19.5 12h-4.7V4H9.2v8H4.5L12 21Z"/></symbol>
+              <symbol id="icon-left" viewBox="0 0 24 24"><path d="M3 12 12 4.5v4.7h8v5.6h-8v4.7L3 12Z"/></symbol>
+              <symbol id="icon-right" viewBox="0 0 24 24"><path d="M21 12 12 4.5v4.7H4v5.6h8v4.7l9-7.5Z"/></symbol>
+              <symbol id="icon-power-horn" viewBox="0 0 48 48"><path d="M24 5v15m-10-8a18 18 0 1 0 20 0" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/><path d="M17 29h5l9-6v17l-9-6h-5z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="M34 28q5 3.5 0 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></symbol>
+              <symbol id="icon-speed" viewBox="0 0 48 48"><path d="M8 34a19 19 0 1 1 32 0M12 33h24M24 26l10-9" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M24 26a3 3 0 1 0 0 .1" fill="currentColor"/><path d="m10 19 4 2m3-10 2 4m11-4-2 4m10 4-4 2" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></symbol>
+              <symbol id="icon-light-sound" viewBox="0 0 48 48"><path d="M15 21a9 9 0 1 1 18 0c0 4-2 6-4 8-.8.8-1 2-1 3h-8c0-1-.2-2.2-1-3-2-2-4-4-4-8Zm6 15h6m-5 4h4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M37 18q6 6 0 12m3-16q10 10 0 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+              <symbol id="icon-fork-up" viewBox="0 0 48 48"><path d="M8 35h27M12 35V20h18v15M30 25h5l5 10M17 20v-5h10v5M22 14V5m-5 5 5-5 5 5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="38" r="3" fill="currentColor"/><circle cx="32" cy="38" r="3" fill="currentColor"/></symbol>
+              <symbol id="icon-gear" viewBox="0 0 48 48"><path d="m20 5 8 0 1.2 4.2 3.2 1.3 3.8-2.1 5.7 5.7-2.1 3.8 1.3 3.2L45 22v8l-4.2 1.2-1.3 3.2 2.1 3.8-5.7 5.7-3.8-2.1-3.2 1.3L28 47h-8l-1.2-4.2-3.2-1.3-3.8 2.1-5.7-5.7 2.1-3.8-1.3-3.2L3 30v-8l4.2-1.2 1.3-3.2-2.1-3.8 5.7-5.7 3.8 2.1 3.2-1.3L20 5Z" transform="translate(1 0) scale(.95)" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linejoin="round"/><circle cx="24" cy="26" r="7" fill="none" stroke="currentColor" stroke-width="2.8"/></symbol>
+              <symbol id="icon-fork-down" viewBox="0 0 48 48"><path d="M8 35h27M12 35V20h18v15M30 25h5l5 10M17 20v-5h10v5M22 5v9m-5-5 5 5 5-5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="38" r="3" fill="currentColor"/><circle cx="32" cy="38" r="3" fill="currentColor"/></symbol>
+            </svg>
+            <div class="controller-face" id="controller-face" aria-label="Mando nuevo de montacargas, con dos joysticks y seis botones">
+              <div class="brand-plate" aria-hidden="true">MODEL</div>
+              <span class="pilot-led" aria-label="Indicador luminoso del mando; sin telemetría del ESP32"></span>
+              <div class="stick-area left-stick-area">
+                <span class="axis-label axis-up" aria-hidden="true"><svg><use href="#icon-up"></use></svg></span>
+                <span class="axis-label axis-down" aria-hidden="true"><svg><use href="#icon-down"></use></svg></span>
+                <div class="stick" id="drive-stick" data-stick-axis="vertical" role="application" aria-label="Joystick izquierdo. Arriba avanzar, abajo retroceder. Suelta para detener." tabindex="0">
+                  <span class="stick-ring" aria-hidden="true"></span><span class="stick-knob" id="drive-knob" aria-hidden="true"><i></i></span>
+                </div>
+                <span class="stick-caption">AVANZAR <i>·</i> ATRÁS</span>
+              </div>
+              <button class="physical-key center-key" id="key-power-horn" type="button" aria-label="Pulsación corta: claxon. Pulsación larga: encender; función pendiente de habilitar en firmware.">
+                <svg class="button-icon" aria-hidden="true"><use href="#icon-power-horn"></use></svg><span class="key-caption">CLAXON <i>·</i> ENCENDER*</span>
+              </button>
+              <div class="stick-area right-stick-area">
+                <span class="axis-label axis-left" aria-hidden="true"><svg><use href="#icon-left"></use></svg></span>
+                <span class="axis-label axis-right" aria-hidden="true"><svg><use href="#icon-right"></use></svg></span>
+                <div class="stick" id="turn-stick" data-stick-axis="horizontal" role="application" aria-label="Joystick derecho. Izquierda y derecha para girar. Suelta para detener." tabindex="0">
+                  <span class="stick-ring" aria-hidden="true"></span><span class="stick-knob" id="turn-knob" aria-hidden="true"><i></i></span>
+                </div>
+                <span class="stick-caption">GIRO IZQUIERDA <i>·</i> DERECHA</span>
+              </div>
+              <button class="physical-key speed-key" id="key-speed" type="button" aria-label="Ajustar velocidad"><svg class="button-icon" aria-hidden="true"><use href="#icon-speed"></use></svg><span class="key-caption">VELOCIDAD</span></button>
+              <button class="physical-key light-sound-key" id="key-light-sound" type="button" aria-label="Pulsación corta: luces. Pulsación larga: música."><svg class="button-icon" aria-hidden="true"><use href="#icon-light-sound"></use></svg><span class="key-caption">LUZ <i>·</i> MÚSICA*</span></button>
+              <button class="physical-key fork-up-key" id="key-fork-up" type="button" aria-label="Subir horquilla"><svg class="button-icon" aria-hidden="true"><use href="#icon-fork-up"></use></svg><span class="key-caption">SUBIR</span></button>
+              <button class="physical-key demo-key" id="key-demo" type="button" aria-label="Iniciar la DEMO seleccionada"><svg class="button-icon" aria-hidden="true"><use href="#icon-gear"></use></svg><span class="key-caption">AUTO DEMO</span></button>
+              <button class="physical-key fork-down-key" id="key-fork-down" type="button" aria-label="Bajar horquilla"><svg class="button-icon" aria-hidden="true"><use href="#icon-fork-down"></use></svg><span class="key-caption">BAJAR</span></button>
+            </div>
             <div class="remote-safety">
-              <span id="action-feedback" role="status" aria-live="polite">Esperando conexión con la API</span>
+              <div class="remote-feedback"><strong id="current-command">EN ESPERA</strong><span id="action-feedback" role="status" aria-live="polite">Esperando conexión con la API</span></div>
               <button class="stop-button" id="stop-button" type="button"><span aria-hidden="true">■</span> DETENER</button>
             </div>
           </div>
-          <p class="safety-note remote-note"><span aria-hidden="true">ⓘ</span> La aceptación de la API confirma la solicitud; no confirma movimiento físico.</p>
+          <p class="safety-note remote-note"><span aria-hidden="true">ⓘ</span> Pulsación corta: claxon o luces. Mantener pulsado: encender* o música*. * Requieren habilitarse por separado en firmware y catálogo; la API no confirma movimiento físico.</p>
         </section>
-
-        <div class="control-layout">
-          <section class="panel drive-panel" aria-labelledby="drive-title">
-            <div class="panel-heading">
-              <div><p class="eyebrow">02 / JOYSTICK</p><h2 id="drive-title">Dirección táctil</h2></div>
-              <span class="live-tag"><span></span> MANDO</span>
-            </div>
-            <div class="drive-content">
-              <div class="joystick-wrap">
-                <div class="joystick" id="joystick" role="application" aria-label="Joystick. Arrastra para seleccionar avanzar, retroceder, izquierda o derecha. Suelta para detener." tabindex="0">
-                  <span class="joystick-label label-up">AVANZAR</span><span class="joystick-label label-down">ATRÁS</span>
-                  <span class="joystick-label label-left">IZQUIERDA</span><span class="joystick-label label-right">DERECHA</span>
-                  <span class="joystick-cross" aria-hidden="true"></span>
-                  <span class="joystick-knob" id="joystick-knob"><span></span></span>
-                </div>
-                <p class="joystick-hint">Arrastra el mando · suelta para detener</p>
-              </div>
-              <div class="drive-side">
-                <div class="direction-readout"><span class="readout-label">ORDEN ACTUAL</span><strong id="current-command">EN ESPERA</strong></div>
-                <p class="safety-note">Arrastra y suelta para regresar al centro. Al soltar tras mover, se solicita DETENER.</p>
-              </div>
-            </div>
-          </section>
 
           <section class="panel demo-panel" aria-labelledby="demo-title">
             <div class="panel-heading">
-              <div><p class="eyebrow">03 / AUTOMATIZACIÓN</p><h2 id="demo-title">Secuencia DEMO</h2></div>
+              <div><p class="eyebrow">02 / AUTOMATIZACIÓN</p><h2 id="demo-title">Secuencia DEMO</h2></div>
               <span class="panel-number">02</span>
             </div>
             <p class="section-copy">Elige una secuencia guardada para este vehículo.</p>

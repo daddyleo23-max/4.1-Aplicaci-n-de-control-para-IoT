@@ -63,7 +63,7 @@ function configureAuthPanel() {
 configureAuthPanel();
 
 function sendCommand(command, { priority = false } = {}) {
-  if (!command || command.activo === false) return;
+  if (!command || command.activo === false || command.activo === 0) return;
   if (demoRunning && command.nombre?.toUpperCase() !== 'DETENER') { feedback('Cancela la DEMO antes de enviar otro comando.', 'DEMO ACTIVA'); return; }
   const epoch = ++requestEpoch;
   const submit = async () => {
@@ -113,12 +113,12 @@ async function loadInitialData() {
   if (vehicleResult.status === 'fulfilled') {
     const vehicle = vehicleResult.value;
     document.querySelector('#vehicle-name').textContent = vehicle.nombre || `Vehículo ${config.vehicleId}`;
-    document.querySelector('.eyebrow').textContent = `MANDO TRASPEED · VEHÍCULO ${String(vehicle.id_vehiculo || config.vehicleId).padStart(2,'0')}`;
+    document.querySelector('.eyebrow').textContent = `MANDO 2.4 GHz · VEHÍCULO ${String(vehicle.id_vehiculo || config.vehicleId).padStart(2,'0')}`;
   } else feedback(`No se pudo cargar el vehículo: ${vehicleResult.reason.message}`);
   if (commandResult.status === 'fulfilled') {
     commands = commandResult.value.comandos || [];
     commands.forEach((command) => commandById.set(command.id_comando, command));
-    stopCommand = commands.find((item) => item.nombre?.trim().toUpperCase() === 'DETENER') || null;
+    stopCommand = commands.find((item) => item.nombre?.trim().toUpperCase() === 'DETENER' && item.activo !== false && item.activo !== 0) || null;
     renderCommands(commands, {
       onCommand: (command) => sendCommand(command),
       onDemo: () => {
@@ -129,11 +129,12 @@ async function loadInitialData() {
         }
         elements.demoStart.click();
       },
+      onUnavailable: (message) => feedback(message, 'FUNCIÓN PENDIENTE'),
     });
     bindJoystick(commands, sendCommand, stopVehicle);
     if (!stopCommand) { elements.stop.disabled = true; elements.stop.title = 'DETENER no está disponible en el catálogo'; }
   } else {
-    document.querySelector('#command-grid').innerHTML = '<div class="empty-state">No se pudo cargar el catálogo. Verifica conexión y CORS.</div>';
+    renderCommands([], { onCommand: () => {}, onDemo: () => {}, onUnavailable: (message) => feedback(message) });
     document.querySelector('#command-count').textContent = 'Catálogo no disponible';
     feedback(`No se pudo cargar el catálogo: ${commandResult.reason.message}`);
   }

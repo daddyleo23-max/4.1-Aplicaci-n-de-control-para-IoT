@@ -98,3 +98,100 @@
 #auth-status{grid-column:2;margin:0;color:#aab4ae;font-size:8px;line-height:1.35}
 .auth-panel.auth-http-only{display:block;padding:6px 9px;margin-bottom:6px}.auth-http-only .auth-copy strong{display:none}.auth-http-only .auth-copy small{margin:0;font-size:7px}
 @media(max-width:600px){.auth-panel{grid-template-columns:1fr;gap:7px;margin-bottom:7px;padding:8px}.auth-copy strong{font-size:9px}.auth-copy small{font-size:7px}.auth-entry input,.auth-entry button{min-height:36px;font-size:9px}#auth-status{grid-column:1;font-size:7px}}
+
+/* Interfaz adaptada al mando amarillo de dos joysticks del nuevo montacargas. */
+.control-layout{grid-template-columns:minmax(0,1.65fr) minmax(285px,.82fr);align-items:start}
+.commands-panel{margin-top:0;background:#171a19;overflow:visible;position:relative;padding:clamp(14px,2vw,22px)}
+.commands-panel::before{display:none}
+.commands-panel .panel-heading{margin-bottom:12px}
+.commands-panel .panel-heading h2{font-size:clamp(15px,1.7vw,19px)}
+.remote-shell{position:relative;overflow:visible;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.remote-shell::before{display:none}
+.remote-shell>*{position:relative;z-index:auto}
+.icon-sprite{position:absolute;width:0;height:0;overflow:hidden}
+.controller-face{--face:#dda83c;position:relative;isolation:isolate;width:min(100%,820px);aspect-ratio:1.48/1;margin:0 auto;padding:4.2% 4.6%;overflow:hidden;border:3px solid #f0c96d;border-radius:9%/13%;background:linear-gradient(135deg,#edc466 0%,#dfaE48 35%,#d39a2d 70%,#c58a22 100%);box-shadow:inset 0 4px 8px #fff7c566,inset 0 -13px 20px #744d0e38,0 12px 24px #0005;color:#241d12;display:grid;grid-template-columns:minmax(0,1fr) 25% minmax(0,1fr);grid-template-rows:12% minmax(0,1fr) 25%;gap:1.4% 1.5%}
+.controller-face::before,.controller-face::after{content:"";position:absolute;z-index:-1;top:39%;width:21%;height:15%;background:#191a18}
+.controller-face::before{left:0;clip-path:polygon(0 48%,100% 0,100% 100%,0 100%)}
+.controller-face::after{right:0;clip-path:polygon(0 0,100% 48%,100% 100%,0 100%)}
+.brand-plate{grid-column:1/4;grid-row:1;justify-self:center;align-self:center;width:35%;height:100%;min-height:25px;display:grid;place-items:center;border-radius:7px;border:1px solid #36352f;background:#171917;color:#e4e4dc;box-shadow:0 2px 3px #0006;font-size:clamp(10px,1.45vw,16px);font-weight:900;font-style:italic;letter-spacing:.1em;text-shadow:1px 0 #d74b42}
+.pilot-led{position:absolute;top:20%;left:50%;transform:translateX(-50%);width:clamp(8px,1.05vw,13px);aspect-ratio:1;border:2px solid #f08462;border-radius:50%;background:#c94538;box-shadow:0 0 9px #f05a4688}
+.stick-area{position:relative;grid-row:2;display:flex;align-items:center;justify-content:center;flex-direction:column;min-width:0}
+.left-stick-area{grid-column:1}.right-stick-area{grid-column:3}
+.stick{position:relative;width:min(100%,clamp(112px,16vw,198px));aspect-ratio:1;touch-action:none;user-select:none;cursor:grab;outline:none}
+.stick:active{cursor:grabbing}
+.stick-ring{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,#73797a 0 35%,#555b5d 37% 63%,#b9b8ac 65% 69%,#727779 71% 100%);border:2px solid #bdbdb2;box-shadow:inset 0 6px 15px #1118,0 4px 8px #5e421760}
+.stick-knob{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:40%;height:40%;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#f2c964,#c08a2c);border:3px solid #ffe09a;box-shadow:0 5px 8px #211a108c,inset 0 3px 4px #fff6;transition:left .09s,top .09s}
+.stick-knob i{display:block;width:52%;height:52%;border-radius:50%;border:2px solid #805f2c66}
+.stick:focus-visible .stick-ring{outline:3px solid #fff4b5;outline-offset:3px}
+.axis-label{position:absolute;z-index:2;width:clamp(11px,1.2vw,15px);height:clamp(11px,1.2vw,15px);color:#54401c;display:block}
+.axis-label svg{width:100%;height:100%;fill:currentColor}
+.axis-up{top:3%;left:50%;transform:translateX(-50%)}.axis-down{bottom:3%;left:50%;transform:translateX(-50%)}
+.axis-left{left:2%;top:50%;transform:translateY(-50%)}.axis-right{right:2%;top:50%;transform:translateY(-50%)}
+.stick-caption{position:absolute;bottom:-11%;left:0;right:0;text-align:center;color:#563f1c;font:clamp(9px,.9vw,11px) var(--mono);letter-spacing:.035em;white-space:nowrap}
+.stick-caption i,.key-caption i{font-style:normal;color:#795b26}
+.physical-key{position:relative;z-index:2;width:clamp(34px,4.8vw,54px);aspect-ratio:1;padding:0;border:2px solid #9b793c;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px;background:radial-gradient(circle at 35% 27%,#edc45f,#c18b2b 77%);box-shadow:inset 0 2px 4px #fff7,0 3px 5px #64450f8c;color:#44351b;cursor:pointer;transition:transform .12s,filter .12s,box-shadow .12s}
+.physical-key:hover:not(:disabled){transform:translateY(-2px);filter:brightness(1.08);box-shadow:inset 0 2px 4px #fff8,0 5px 7px #64450f8c}
+.physical-key:active:not(:disabled),.physical-key[data-pressed=true]{transform:translateY(1px);box-shadow:inset 0 3px 5px #68481477}
+.physical-key:focus-visible{outline:3px solid #fff0a8;outline-offset:3px}
+.physical-key:disabled{opacity:.42;filter:grayscale(.6);cursor:not-allowed}
+.button-icon{width:58%;height:58%;display:block;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.key-caption{position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);width:max-content;max-width:115px;text-align:center;color:#493716;font:clamp(8px,.8vw,10px) var(--mono);line-height:1.2;letter-spacing:.015em}
+.center-key{grid-column:2;grid-row:2;align-self:center;justify-self:center;width:clamp(42px,5.8vw,66px);margin-top:-6%}
+.center-key .button-icon{width:62%;height:62%}
+.speed-key{grid-column:2;grid-row:2;align-self:end;justify-self:start;margin:0 0 0 7%;width:clamp(31px,4.2vw,45px)}
+.light-sound-key{grid-column:2;grid-row:2;align-self:end;justify-self:end;margin:0 7% 0 0;width:clamp(31px,4.2vw,45px)}
+.fork-up-key{grid-column:1;grid-row:3;justify-self:end;align-self:center;margin-right:-3%}
+.demo-key{grid-column:2;grid-row:3;justify-self:center;align-self:center}
+.fork-down-key{grid-column:3;grid-row:3;justify-self:start;align-self:center;margin-left:-3%}
+.remote-safety{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:15px 2px 0;padding-top:12px;border-top:1px solid #343a37}
+.remote-feedback{min-width:0;display:flex;flex-direction:column;gap:3px}
+.remote-feedback strong{font:800 12px var(--mono);letter-spacing:.06em;color:#f2eee0}
+.remote-safety #action-feedback{color:#9ba59f;font-size:9px;line-height:1.4}
+.remote-safety .stop-button{min-width:145px;min-height:43px}
+.remote-note{margin:11px 2px 0;color:#929d97}
+.remote-note>span{color:var(--yellow);margin-right:5px}
+.demo-panel{min-height:100%;padding:21px}
+.demo-panel .section-copy{line-height:1.55}
+.demo-progress{min-height:44px}
+.activity-line{margin-top:14px}
+@media(max-width:900px){
+  .control-layout{grid-template-columns:1fr;gap:10px}
+  .controller-face{width:min(100%,760px)}
+  .demo-panel{min-height:0}
+}
+@media(max-width:600px){
+  .page-wrap{padding:14px 12px 24px}
+  .control-layout{gap:9px}
+  .commands-panel{padding:13px 10px}
+  .commands-panel .panel-heading{align-items:center;margin-bottom:9px}
+  .commands-panel .panel-heading h2{font-size:14px}
+  .commands-panel .eyebrow{font-size:7px}
+  .catalog-count{font-size:7px;white-space:nowrap}
+  .controller-face{aspect-ratio:1.3/1;padding:4% 2.4%;grid-template-columns:minmax(0,1fr) 24% minmax(0,1fr);grid-template-rows:11% minmax(0,1fr) 25%;gap:1% .5%;border-width:2px;border-radius:8%/11%}
+  .brand-plate{width:39%;min-height:19px;border-radius:5px;font-size:10px}
+  .pilot-led{top:19%;width:8px}
+  .stick{width:min(100%,clamp(88px,28vw,158px))}
+  .stick-caption{font-size:6.5px;bottom:-10%}
+  .axis-label{width:10px;height:10px}
+  .physical-key{width:clamp(29px,8.1vw,43px);border-width:1.5px}
+  .center-key{width:clamp(34px,9.4vw,50px);margin-top:-8%}
+  .speed-key,.light-sound-key{width:clamp(27px,7.3vw,37px);margin-bottom:0}
+  .key-caption{font-size:6px;max-width:64px;top:calc(100% + 3px)}
+  .speed-key .key-caption,.light-sound-key .key-caption{max-width:55px}
+  .fork-up-key{margin-right:-2%}.fork-down-key{margin-left:-2%}
+  .remote-safety{gap:7px;margin-top:10px;padding-top:8px}
+  .remote-feedback strong{font-size:10px}
+  .remote-safety #action-feedback{font-size:7px}
+  .remote-safety .stop-button{min-width:100px;min-height:39px;padding-inline:8px;font-size:9px}
+  .remote-note{font-size:7.5px;line-height:1.4;margin-top:8px}
+  .demo-panel{padding:15px 12px}
+}
+@media(max-width:370px){
+  .controller-face{aspect-ratio:1.22/1}
+  .stick{width:clamp(81px,27vw,104px)}
+  .stick-caption{font-size:5.5px}
+  .physical-key{width:29px}
+  .center-key{width:34px}
+  .speed-key,.light-sound-key{width:26px}
+  .key-caption{font-size:5px}
+}
