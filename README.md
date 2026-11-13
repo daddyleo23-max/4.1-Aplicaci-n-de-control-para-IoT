@@ -121,12 +121,3 @@ Estas pruebas comprueban la comunicación y el estado lógico del backend. El es
 El sitio usa rutas relativas para funcionar bajo la subruta del repositorio. Para completar la publicación, habilita GitHub Pages para la rama `main` y la carpeta raíz (`/(root)`). La API debe permitir en CORS el origen HTTPS publicado de Pages; de lo contrario, el navegador bloqueará las consultas y comandos aunque la API funcione en Swagger.
 
 En `localhost`, la clave puede cargarse desde `js/auth.local.js`, que Git ignora. En un sitio HTTPS, el usuario la introduce en el panel de autorización y queda solo en memoria durante esa pestaña. No agregues la clave al código, al repositorio ni a las capturas.
-
-## Pendientes de entrega
-
-1. Publicar el sitio en GitHub Pages y confirmar que el origen publicado está permitido por CORS en FastAPI.
-2. Probar desde un teléfono real el diseño, el catálogo, el envío de comandos y la recepción WSS usando HTTPS.
-3. Guardar las capturas y preparar el PDF de evidencias que solicita la actividad.
-4. Si se prueba el circuito físico, documentar ese resultado por separado de las confirmaciones HTTP/WSS.
-
-La red del portal de configuración del ESP32 deberá identificarse como `Montacargas León` cuando se prepare una modificación del firmware. El firmware permanece sin cambios mientras no se haya validado el circuito.
