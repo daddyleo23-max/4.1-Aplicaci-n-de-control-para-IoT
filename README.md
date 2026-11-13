@@ -1,8 +1,13 @@
-# Control IoT · Montacargas
+# Montacargas IoT · Control y monitoreo
 
-Frontend modular para la actividad 4.1. Es una aplicación estática pensada para GitHub Pages y reutiliza la API FastAPI existente; no contiene backend, lógica de base de datos ni credenciales.
+Aplicación web responsiva del montacargas que reutiliza la API FastAPI existente e integra dos vistas:
 
-**Estado:** las pruebas de integración desde la computadora se completaron con la API y WSS desplegados. La publicación en GitHub Pages, la prueba desde un teléfono usando HTTPS y las capturas finales de evidencia siguen pendientes.
+- **Práctica 4.1.1 · Aplicación de control para IoT:** mando con dos joysticks, botones, DETENER y secuencias DEMO. En teléfono horizontal el mando ocupa el área principal.
+- **Práctica 4.2 · Aplicación de monitoreo para IoT:** último movimiento reportado, hasta diez movimientos individuales persistidos y tres indicadores independientes para WSS, API AWS y Amazon RDS.
+
+[Abrir la aplicación publicada en GitHub Pages](https://daddyleo23-max.github.io/4.1-Aplicaci-n-de-control-para-IoT/)
+
+**Verificación:** CONTROL se probó desde computadora y teléfono con la API activa. En MONITOREO se comprobaron los eventos de un cliente externo, la presentación del historial y la reconexión. Queda por comprobar el historial vacío y documentar MONITOREO en un teléfono físico con la última versión publicada.
 
 ## Estado de integración
 
@@ -64,6 +69,7 @@ control-iot/
 │   ├── connection-status.js
 │   ├── joystick.js
 │   ├── main.js
+│   ├── monitoring.js
 │   ├── ui.js
 │   └── websocket-client.js
 ├── tools/escuchar_ws.py
