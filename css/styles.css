@@ -257,51 +257,25 @@
   .status-led{position:static;grid-column:2;grid-row:1/3;align-self:center;margin:0;width:6px;height:6px;transform:none}
 }
 
-/* En horizontal, limita el mando por altura disponible y acerca el panel DEMO. */
-@media(max-width:1000px) and (orientation:landscape) and (max-height:560px){
-  .topbar{height:40px;padding-inline:14px}
-  .page-wrap{padding:6px 14px 10px}
-  .intro-row{align-items:center;flex-direction:row;gap:10px;margin-bottom:5px}
-  .intro-row .eyebrow{margin-bottom:3px;font-size:7px}
-  h1{font-size:clamp(17px,2.7vw,22px)}
-  .intro-copy{display:none}
-  .connection-summary{display:none}
-  .status-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-bottom:7px}
-  .status-card{display:grid;grid-template-columns:minmax(0,1fr) 6px;grid-template-rows:auto auto;align-items:center;gap:2px 4px;min-width:0;min-height:38px;padding:4px 7px;border-radius:8px}
-  .status-icon,.status-detail{display:none}
-  .status-card>div{grid-column:1;grid-row:1/3;display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0}
-  .status-label{font-size:9px;line-height:1.1;letter-spacing:-.02em;overflow-wrap:anywhere}
-  .status-value{margin:0;font-size:10px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .status-led{position:static;grid-column:2;grid-row:1/3;align-self:center;margin:0;width:6px;height:6px;transform:none}
-  .view-nav{margin-bottom:7px;padding:3px;gap:4px}
-  .view-tab{min-width:96px;min-height:34px;padding:5px 12px;font-size:8px}
-  .control-layout{grid-template-columns:minmax(0,1fr) minmax(195px,.72fr);gap:8px}
-  .commands-panel{padding:8px}
-  .commands-panel .panel-heading{margin-bottom:5px}
-  .commands-panel .panel-heading h2{font-size:12px}
-  .commands-panel .panel-heading .eyebrow{margin-bottom:3px;font-size:7px}
-  .controller-face{width:min(100%,77svh);aspect-ratio:1.8/1;padding:2.5% 3%;grid-template-rows:10% minmax(0,1fr) 22%;gap:.5% 1%;border-width:2px}
-  .brand-plate{min-height:17px;font-size:9px}
-  .pilot-led{top:18%;width:7px}
-  .stick{width:min(100%,clamp(72px,17svh,108px))}
-  .stick-caption{left:-25%;right:-25%;bottom:-7%;font-size:6px;letter-spacing:-.04em}
-  .axis-label{width:9px;height:9px}
-  .physical-key{width:clamp(25px,6svh,36px);border-width:1px}
-  .center-key{width:clamp(30px,7svh,42px);margin-top:-5%}
-  .speed-key,.light-sound-key{width:clamp(23px,5.6svh,32px)}
-  .key-caption{top:calc(100% + 2px);font-size:6px;max-width:52px}
-  .remote-safety{gap:7px;margin-top:6px;padding-top:6px}
-  .remote-feedback strong{font-size:8px}
-  .remote-safety #action-feedback{font-size:7px}
-  .remote-safety .stop-button{min-width:88px;min-height:33px;padding:5px;font-size:8px}
-  .remote-note{margin-top:5px;font-size:6px;line-height:1.25}
-  .demo-panel{padding:10px}
-  .demo-panel .panel-heading{margin-bottom:5px}
-  .demo-panel .panel-heading h2{font-size:12px}
-  .demo-panel .section-copy,.demo-note{font-size:8px}
-  .demo-select{min-height:34px;font-size:9px}
-  .demo-actions{gap:5px}
-  .demo-start,.demo-cancel{min-height:32px;padding:5px;font-size:8px}
-  .demo-progress{min-height:32px;font-size:8px}
-  .activity-line{margin-top:7px;padding:8px}
+/* En móvil horizontal se usa un modo de operación: el mando es el foco visual. */
+@media(max-width:1000px) and (orientation:landscape){
+  .topbar,.intro-row,.status-grid,.view-nav,.activity-line,.footer{display:none}
+  .page-wrap{min-height:100svh;padding:clamp(4px,1.5svh,12px) clamp(6px,2vw,18px)}
+  .control-layout{display:block}
+  .commands-panel{padding:0;border:0;background:transparent}
+  .commands-panel .panel-heading,.auth-panel,.demo-panel,.remote-note{display:none!important}
+  .remote-shell{display:flex;align-items:center;justify-content:center;min-height:calc(100svh - 2 * clamp(4px,1.5svh,12px));padding:0}
+  .controller-face{width:min(96vw,172svh);aspect-ratio:1.8/1;margin:auto;padding:2% 2.5%;grid-template-rows:10% minmax(0,1fr) 22%;gap:.5% 1%;border-width:2px}
+  .brand-plate{min-height:20px;font-size:clamp(10px,1.8vw,16px)}
+  .pilot-led{top:18%;width:9px}
+  .stick{width:min(100%,clamp(106px,39svh,230px))}
+  .stick-caption,.key-caption{display:none}
+  .axis-label{width:15px;height:15px}
+  .physical-key{width:clamp(36px,11svh,68px);border-width:1.5px}
+  .center-key{width:clamp(46px,14svh,84px);margin-top:-5%}
+  .speed-key,.light-sound-key{width:clamp(33px,9.5svh,58px)}
+  .remote-safety{position:absolute;right:clamp(3px,1vw,10px);top:clamp(3px,1vw,10px);z-index:3;margin:0;padding:0;border:0}
+  .remote-feedback{display:none}
+  .remote-safety .stop-button{display:grid;place-items:center;min-width:clamp(30px,8svh,42px);width:clamp(30px,8svh,42px);min-height:clamp(30px,8svh,42px);height:clamp(30px,8svh,42px);padding:0;border-radius:50%;box-shadow:0 2px 0 #9e3e34;font-size:0}
+  .remote-safety .stop-button span{margin:0;font-size:10px}
 }
