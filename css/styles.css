@@ -1,21 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
 
-.vehicle-portrait{
-  display:block;
-  width:150px;
-  height:96px;
-  object-fit:contain;
-  margin-top:12px;
-  border:1px solid #343a37;
-  border-radius:12px;
-  background:#171b1b;
-}
-@media(min-width:1001px){
-  .vehicle-portrait{width:180px;height:112px}
-}
-@media(max-width:1000px) and (orientation:landscape){
-  .vehicle-portrait{display:none}
-}
 
 @media(min-width:1001px){
   body .app-shell .page-wrap:has(#view-control:not([hidden])){
