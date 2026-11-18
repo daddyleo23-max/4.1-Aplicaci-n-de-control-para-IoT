@@ -3,7 +3,7 @@
 /* Espacio de trabajo, ampliación del mando y transiciones del historial. */
 .presentation-button{padding:9px 13px;border:1px solid #8c6928;border-radius:8px;background:#342b19;color:#f6bd35;cursor:pointer}
 .presentation-button:focus-visible{outline:3px solid #f6bd35;outline-offset:3px}
-.expand-control{display:block;margin:0 0 10px auto;min-height:40px}
+.expand-control{display:none;margin:0 0 10px auto;min-height:40px}
 .demo-dialog{width:min(560px,94vw);max-height:90dvh;padding:16px;border:1px solid #575044;border-radius:16px;background:#171b1b;color:#f1f3ed;overflow:auto}
 .demo-dialog::backdrop{background:#000b}
 .demo-dialog>.presentation-button{display:block;margin-left:auto}
@@ -14,6 +14,7 @@
 @keyframes history-fade{to{opacity:0;transform:translateY(8px)}}
 @media(prefers-reduced-motion:reduce){.history-new,.history-leaving{animation:none}}
 @media(min-width:1001px){
+  .expand-control{display:block}
   .app-shell .page-wrap{width:100%;max-width:none;padding:20px 28px 28px}
   .app-shell .intro-row{margin-bottom:16px}
   .app-shell .control-layout{grid-template-columns:minmax(0,1fr) minmax(300px,26%);gap:20px}

@@ -22,6 +22,7 @@ dialog.addEventListener('close', () => {
 });
 
 const expand = document.createElement('button');
+const desktop = window.matchMedia('(min-width:1001px) and (hover:hover) and (pointer:fine)');
 expand.type = 'button';
 expand.className = 'presentation-button expand-control';
 expand.textContent = 'Ampliar control';
@@ -29,12 +30,14 @@ expand.setAttribute('aria-pressed', 'false');
 document.querySelector('.remote-shell').prepend(expand);
 
 function setExpanded(value) {
+  value = value && desktop.matches;
   document.body.classList.toggle('control-expanded', value);
   expand.textContent = value ? 'Restaurar tamaño' : 'Ampliar control';
   expand.setAttribute('aria-pressed', String(value));
 }
 
 expand.addEventListener('click', () => setExpanded(!document.body.classList.contains('control-expanded')));
+desktop.addEventListener('change', () => setExpanded(false));
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !dialog.open) setExpanded(false);
 });
