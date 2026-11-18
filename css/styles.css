@@ -1,5 +1,42 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
 
+@media(min-width:1001px){
+  body .app-shell .page-wrap:has(#view-control:not([hidden])){
+    display:grid;
+    grid-template-columns:minmax(270px,320px) minmax(0,1fr);
+    grid-template-rows:auto auto auto auto 1fr;
+    gap:16px 26px;
+    align-content:start;
+  }
+  .page-wrap:has(#view-control:not([hidden]))>.intro-row{
+    grid-column:1;grid-row:1;display:block;margin:0;
+  }
+  .page-wrap:has(#view-control:not([hidden])) h1{font-size:30px}
+  .page-wrap:has(#view-control:not([hidden])) .connection-summary{margin-top:14px;width:max-content;max-width:100%;white-space:normal}
+  .page-wrap:has(#view-control:not([hidden]))>.status-grid{grid-column:1;grid-row:2;grid-template-columns:1fr;gap:9px;margin:0}
+  .page-wrap:has(#view-control:not([hidden]))>.view-nav{grid-column:1;grid-row:3;width:100%;margin:0}
+  .page-wrap:has(#view-control:not([hidden])) .view-tab{flex:1;min-width:0}
+  .page-wrap:has(#view-control:not([hidden]))>#view-control,
+  .page-wrap:has(#view-control:not([hidden])) .control-layout{display:contents}
+  .page-wrap:has(#view-control:not([hidden])) .commands-panel{grid-column:2;grid-row:1/6;margin:0;align-self:start;min-width:0}
+  .page-wrap:has(#view-control:not([hidden])) .demo-panel{grid-column:1;grid-row:4;min-height:0;padding:18px}
+  .page-wrap:has(#view-control:not([hidden])) .activity-line{grid-column:1;grid-row:5;align-self:start;margin:0}
+  body:not(.control-expanded) .app-shell .commands-panel .controller-face{width:min(100%,760px,103dvh)}
+  .remote-shell .expand-control{
+    padding:9px 14px;
+    border-radius:999px;
+    border-color:#b18b3a;
+    background:linear-gradient(135deg,#3b321f,#24271f);
+    color:#ffdb86;
+    font-size:12px;
+    font-weight:700;
+    box-shadow:inset 0 1px #ffe4a51a,0 3px 10px #0003;
+    transition:background .15s,box-shadow .15s;
+  }
+  .remote-shell .expand-control::before{content:attr(data-icon);font-size:20px;line-height:1;vertical-align:-2px;margin-right:8px}
+  .remote-shell .expand-control:hover{background:#493c22;box-shadow:0 0 0 3px #f6bd3518}
+}
+
 /* Monitoreo de escritorio con resumen lateral e historial como área principal. */
 @media(min-width:1001px){
   .app-shell .page-wrap:has(#view-monitor:not([hidden])){

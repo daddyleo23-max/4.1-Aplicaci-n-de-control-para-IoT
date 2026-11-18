@@ -27,12 +27,14 @@ expand.type = 'button';
 expand.className = 'presentation-button expand-control';
 expand.textContent = 'Ampliar control';
 expand.setAttribute('aria-pressed', 'false');
+expand.dataset.icon = '⛶';
 document.querySelector('.remote-shell').prepend(expand);
 
 function setExpanded(value) {
   value = value && desktop.matches;
   document.body.classList.toggle('control-expanded', value);
   expand.textContent = value ? 'Restaurar tamaño' : 'Ampliar control';
+  expand.dataset.icon = value ? '↙' : '⛶';
   expand.setAttribute('aria-pressed', String(value));
 }
 
