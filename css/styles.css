@@ -1,5 +1,34 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
 
+/* Espacio de trabajo, ampliación del mando y transiciones del historial. */
+.presentation-button{padding:9px 13px;border:1px solid #8c6928;border-radius:8px;background:#342b19;color:#f6bd35;cursor:pointer}
+.presentation-button:focus-visible{outline:3px solid #f6bd35;outline-offset:3px}
+.expand-control{display:block;margin:0 0 10px auto;min-height:40px}
+.demo-dialog{width:min(560px,94vw);max-height:90dvh;padding:16px;border:1px solid #575044;border-radius:16px;background:#171b1b;color:#f1f3ed;overflow:auto}
+.demo-dialog::backdrop{background:#000b}
+.demo-dialog>.presentation-button{display:block;margin-left:auto}
+.demo-dialog .demo-panel{display:flex!important;min-height:0;border:0;padding:16px 0 0}
+.history-new{animation:history-highlight 2s ease-out}
+.history-leaving{animation:history-fade .22s ease-in forwards}
+@keyframes history-highlight{from{background:#b6872466;box-shadow:inset 4px 0 #f6bd35}to{background:transparent;box-shadow:inset 0 0 transparent}}
+@keyframes history-fade{to{opacity:0;transform:translateY(8px)}}
+@media(prefers-reduced-motion:reduce){.history-new,.history-leaving{animation:none}}
+@media(min-width:1001px){
+  .app-shell .page-wrap{width:100%;max-width:none;padding:20px 28px 28px}
+  .app-shell .intro-row{margin-bottom:16px}
+  .app-shell .control-layout{grid-template-columns:minmax(0,1fr) minmax(300px,26%);gap:20px}
+  .app-shell .controller-face{width:min(100%,980px)}
+}
+body.control-expanded{overflow:hidden}
+.control-expanded .remote-shell{position:fixed!important;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:58px 12px 76px;background:#111415;overflow:auto}
+.control-expanded .controller-face{width:min(94vw,125dvh)!important;flex-shrink:0}
+.control-expanded .expand-control{position:absolute;right:18px;top:12px;z-index:4}
+.control-expanded .remote-safety{position:absolute;bottom:15px;top:auto;left:20px;right:20px;margin:0;padding:0;border:0}
+@media(max-width:1000px) and (orientation:landscape){
+  .remote-shell .expand-control{display:none}
+  .demo-dialog .demo-panel .panel-heading{display:flex}
+}
+
 :root{color-scheme:dark;--bg:#111415;--panel:#1a1e1f;--panel-2:#202526;--line:#303839;--muted:#909a99;--text:#f1f3ed;--yellow:#f6bd35;--yellow-soft:#f8cf69;--green:#68d49a;--red:#ff6f61;--radius:18px;--mono:'DM Mono',monospace;--sans:'Manrope',system-ui,sans-serif}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);min-width:320px}button,select{font:inherit}.app-shell{min-height:100vh;display:flex;flex-direction:column;background:radial-gradient(ellipse at 76% 4%,rgba(246,189,53,.055),transparent 33%),var(--bg)}
 .topbar{height:72px;padding:0 clamp(18px,5vw,76px);display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #252a2a;background:rgba(17,20,21,.84)}.brand{color:var(--text);display:flex;gap:11px;align-items:center;text-decoration:none;letter-spacing:.1em}.brand-mark{color:var(--yellow);font-size:32px;line-height:1}.brand strong,.brand small{display:block}.brand strong{font-size:14px;font-weight:800}.brand small{font:9px var(--mono);color:var(--muted);letter-spacing:.17em;margin-top:3px}.vehicle-chip{display:flex;align-items:center;gap:9px;padding:8px 12px;border:1px solid var(--line);border-radius:999px;color:#d7ddda;font-size:11px}.vehicle-dot{width:7px;height:7px;border-radius:50%;background:#697270}

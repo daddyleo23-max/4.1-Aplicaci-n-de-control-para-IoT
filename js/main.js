@@ -6,6 +6,7 @@ import { connectWebSocket } from './websocket-client.js';
 import { bindJoystick } from './joystick.js';
 import { startHealthPolling } from './connection-status.js';
 import './monitoring.js';
+import { openDemoPanel } from './presentation.js';
 
 let commands = [];
 let stopCommand = null;
@@ -124,6 +125,10 @@ async function loadInitialData() {
     renderCommands(commands, {
       onCommand: (command) => sendCommand(command),
       onDemo: () => {
+        if (window.matchMedia('(max-width:1000px) and (orientation:landscape)').matches || document.body.classList.contains('control-expanded')) {
+          openDemoPanel();
+          return;
+        }
         if (!elements.demoSelect.value) {
           setDemoStatus('Selecciona una secuencia antes de iniciar la DEMO.');
           elements.demoSelect.focus();

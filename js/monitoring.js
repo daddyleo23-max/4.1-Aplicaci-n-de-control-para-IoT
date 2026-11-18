@@ -19,6 +19,7 @@ let historyEpoch = 0;
 let eventVersion = 0;
 let currentLatestTimestamp = '';
 let knownVehicleName = 'Montacargas IoT';
+let historyRenderVersion = 0;
 
 function vehicleIdOf(payload) {
   const value = payload?.id_vehiculo ?? payload?.estado?.id_vehiculo;
@@ -92,6 +93,13 @@ function renderHistory(response) {
   // El endpoint confirmado ya devuelve filas en orden más reciente → más antigua;
   // conservarlo evita inventar una zona horaria para los datetime sin offset.
   const latestTen = records.slice(0, 10);
+  const version = ++historyRenderVersion;
+  const previous = new Map(Array.from(historyRows.children, (row) => [row.dataset.recordKey, row]));
+  const keys = latestTen.map((record) => String(record.id_historial ?? JSON.stringify([recordTimestamp(record), record.comando, record.codigo])));
+  const leaving = Array.from(previous).filter(([key]) => !keys.includes(key));
+  for (const [, row] of leaving) row.classList.add('history-leaving');
+  const update = () => {
+  if (version !== historyRenderVersion) return;
   historyRows.replaceChildren();
   historyCount.textContent = `${latestTen.length} / 10 registros`;
   historyWrap.hidden = latestTen.length === 0;
@@ -100,6 +108,8 @@ function renderHistory(response) {
 
   for (const [index, record] of latestTen.entries()) {
     const row = document.createElement('tr');
+    row.dataset.recordKey = keys[index];
+    if (previous.size && !previous.has(keys[index])) row.classList.add('history-new');
     const stamp = formatTimestamp(recordTimestamp(record));
     const values = [String(index + 1), record?.comando || 'Comando sin nombre', stamp.date, stamp.time || 'Sin hora'];
     for (const [column, value] of values.entries()) {
@@ -110,6 +120,10 @@ function renderHistory(response) {
     }
     historyRows.append(row);
   }
+  };
+  if (leaving.length && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    window.setTimeout(update, 220);
+  } else update();
 }
 
 async function syncState() {
@@ -131,9 +145,9 @@ async function syncState() {
 
 async function syncHistory() {
   const request = ++historyEpoch;
-  historyMessage.hidden = false;
+  historyMessage.hidden = historyRows.children.length > 0;
   historyMessage.textContent = 'Consultando historial persistido…';
-  historyWrap.hidden = true;
+  historyWrap.hidden = historyRows.children.length === 0;
   try {
     const result = await api.vehicleHistory();
     if (request !== historyEpoch) return;
