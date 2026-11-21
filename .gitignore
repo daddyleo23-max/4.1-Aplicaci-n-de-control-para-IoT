@@ -4,3 +4,8 @@ js/auth.local.js
 .env
 .env.*
 !.env.example
+__pycache__/
+*.pyc
+respaldos_rds/
+inventario_rds_*.json
+permisos_rds_*.json
