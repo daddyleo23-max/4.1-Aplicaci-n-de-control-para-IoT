@@ -76,7 +76,7 @@ def snapshot(cursor, schema):
     )
     data["procedimientos"] = [
         row for row in cursor.fetchall()
-        if not row["ROUTINE_NAME"].startswith(("sp_auth_", "sp_admin_", "sp_usuario_", "sp_acceso_", "sp_editor_", "sp_catalogo_", "sp_invitado_", "sp_reserva_"))
+        if not row["ROUTINE_NAME"].startswith(("sp_auth_", "sp_admin_", "sp_usuario_", "sp_acceso_", "sp_editor_", "sp_catalogo_", "sp_invitado_", "sp_reserva_", "sp_soporte_"))
     ]
     return data
 
@@ -135,8 +135,9 @@ def main():
     migrations["012_api_invitados.up.sql"] = (
         "012", TABLES_011,
     )
+    migrations["013_soporte_diagnostico.up.sql"] = ("013", TABLES_011)
     if sql.name not in migrations:
-        raise SystemExit("Este ejecutor admite las migraciones 001 a 012.")
+        raise SystemExit("Este ejecutor admite las migraciones 001 a 013.")
     version, expected_tables = migrations[sql.name]
     root = Path.cwd()
     sys.path.insert(0, str(root))

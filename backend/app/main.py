@@ -17,6 +17,7 @@ from app.routers.cuenta import router as cuenta_router
 from app.routers.editor_demos import router as editor_demos_router
 from app.routers.catalogo import router as catalogo_router
 from app.routers.invitados import router as invitados_router
+from app.routers.soporte import router as soporte_router
 from app.services.guest_service import guest_service
 from app.resource_security import authorize_resources, sessions_enabled
 
@@ -77,6 +78,7 @@ app.include_router(cuenta_router)
 app.include_router(editor_demos_router)
 app.include_router(catalogo_router)
 app.include_router(invitados_router)
+app.include_router(soporte_router)
 
 
 @app.get("/health/db")

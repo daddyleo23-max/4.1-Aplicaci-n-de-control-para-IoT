@@ -658,3 +658,38 @@ registros, rechaza unidad 1 y unidades con propietario, cierra la reserva,
 retira publicación y aplica baja lógica conservando auditoría. Se comprobó
 con API simulada el recorrido de preparación y retiro, IDs de comandos y
 rechazo de unidad 1. La ejecución real en Windows queda pendiente.
+
+## Consentimiento temporal de diagnóstico (SQL 013 / entrega 014)
+
+El usuario confirmó en Windows el envío de comandos de Invitado, cierre
+manual y vencimiento con botones bloqueados. Captura final con «Tiempo
+agotado», «Prueba terminada» y solicitud de parada procesada.
+
+Se incorpora permisos_soporte, ligado a la asignación concreta y a un
+administrador activo. Sólo el comprador propietario activo concede 1–30
+minutos o revoca. La concesión/revocación se audita. Reasignar, desactivar
+al comprador/unidad/admin, vencer o revocar invalida el permiso. Cada
+consulta REST y autorización WSS comprueba nuevamente el permiso; WSS lo
+revisa también antes de eventos y cada dos segundos. No se concede acceso
+a demos privadas, movimientos, edición ni otras cuentas. Inventario sigue
+siendo administrativo. No se agregan privilegios a iot_api fuera de su
+EXECUTE existente sobre el esquema ni se requieren nuevos triggers.
+
+Este bloque habilita sólo diagnóstico (estado/historial/catálogo de comandos
++ WSS). Soporte operativo, reserva exclusiva de comprador y UI de
+consentimiento siguen pendientes: este bloque no completa ese requisito.
+
+Pruebas: 89 unitarias correctas; SQL en MariaDB local desechable verifica
+concesión, revocación, caducidad y asignación cerrada mediante ROLLBACK.
+El recorrido HTTP/WS local real pasó: admin 403 antes, autoautorización 403,
+consentimiento dueño 201, diagnóstico 200, movimiento 403, WS autorizado,
+revocación 200, WS cerrado y REST 403 posterior. La fixture local carecía
+de estado inicial y se completó antes de repetir exitosamente el recorrido;
+no se modificó la API para ocultar ese 404. La collation local se normalizó
+a unicode_ci; RDS/MySQL 8.4 queda pendiente de validar por el usuario.
+
+Aplicación: paquete entrega_014_soporte_diagnostico.zip incluye SQL 013,
+ejecutor actualizado, backend completo sin secretos y prueba HTTP. Sólo
+sobre copia con 001–012 verificadas. La preparación anterior de Invitado
+permanece intacta. Reversión conservadora: revocar consentimiento y volver
+al backend previo manteniendo tabla y auditoría; no eliminar registros.

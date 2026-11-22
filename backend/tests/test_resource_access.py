@@ -37,7 +37,7 @@ class ResourceAccessTests(unittest.TestCase):
         self.unit = {"id_vehiculo": 1, "activo": 1, "id_propietario": 5,
                      "estado_comercial": "ASIGNADO"}
         self.context = patch.object(resource_security.service, "ejecutar_consulta",
-                                    return_value=[self.unit])
+                                    side_effect=lambda name, args=(): [] if name == "sp_soporte_acceso" else [self.unit])
         self.context.start()
         self.addCleanup(self.context.stop)
 

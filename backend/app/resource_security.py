@@ -14,7 +14,7 @@ service = ProcedimientoService()
 def check_socket_access(token, unit_id):
     from fastapi.security import HTTPAuthorizationCredentials
     session = require_session(HTTPAuthorizationCredentials(scheme="Bearer", credentials=token))
-    check_unit_access(session, resource_context("vehiculo", unit_id))
+    check_unit_access(session, resource_context("vehiculo", unit_id), diagnostic=True)
     return session
 
 
@@ -31,11 +31,15 @@ def resource_context(kind, identifier):
     return rows[0]
 
 
-def check_unit_access(session, unit, inventory=False):
+def check_unit_access(session, unit, inventory=False, diagnostic=False):
     if session["rol"] == "ADMINISTRADOR":
         if inventory:
             return
         if unit["id_propietario"] is None and unit["activo"]:
+            return
+        if diagnostic and unit["activo"] and service.ejecutar_consulta(
+            "sp_soporte_acceso", (session["id_usuario"], unit["id_vehiculo"]),
+        ):
             return
         raise HTTPException(403, "La unidad requiere autorización operativa de su comprador.")
     if unit["activo"] and unit["id_propietario"] == session["id_usuario"]:
@@ -93,4 +97,8 @@ async def authorize_resources(
         if expected_unit is not None and unit["id_vehiculo"] != expected_unit:
             raise HTTPException(403, "Los recursos pertenecen a unidades diferentes.")
         expected_unit = unit["id_vehiculo"]
-        check_unit_access(session, unit, inventory=inventory_route or admin_write)
+        check_unit_access(session, unit, inventory=inventory_route or admin_write,
+                          diagnostic=request.method == "GET" and route in {
+                              "/vehiculos/{id_vehiculo}/estado", "/vehiculos/{id_vehiculo}/historial",
+                              "/vehiculos/{id_vehiculo}/comandos",
+                          })
