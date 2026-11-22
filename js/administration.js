@@ -1,11 +1,28 @@
 import { config, selectVehicle } from './config.js';
 import { request } from './api-client.js';
 import { currentUser, currentToken, setAccountSession } from './account-session.js';
-import { reserveGuestTrial } from './guest-control.js';
+import { reserveGuestTrial, closeGuestTrial, guestTrialActive } from './guest-control.js';
 
 const $ = (selector) => document.querySelector(selector);
 const workspace = $('#account-workspace');
 let screenVersion = 0;
+let currentSection = '';
+
+function markSection(title) {
+  currentSection = title;
+  if ($('#public-catalog').hidden) $('#account-location').textContent = title;
+  let parent = title;
+  if (title.startsWith('Capacidades')) parent = 'Modelos';
+  else if (title.startsWith('Comandos') || title.startsWith('Prueba de Invitado')) parent = 'Unidades';
+  else if (title.startsWith('Demos') || title.includes('secuencia') || title.includes('demo')) parent = currentUser()?.rol === 'ADMINISTRADOR' ? 'Demos de empresa' : 'Mis vehículos';
+  else if (title.startsWith('Autorizar soporte')) parent = 'Mis vehículos';
+  for (const item of $('#account-menu').children) {
+    if (item.textContent === parent) item.setAttribute('aria-current', 'page');
+    else item.removeAttribute('aria-current');
+  }
+  if ($('#account-section-select')) $('#account-section-select').value = parent;
+}
+
 
 function node(tag, text, className) {
   const element = document.createElement(tag);
@@ -52,7 +69,10 @@ async function fetchCollection(path, key) {
 
 function panel(title) {
   const result = node('section', undefined, 'panel account-panel');
+  markSection(title);
+  result.append(node('p', currentUser()?.rol === 'ADMINISTRADOR' ? 'ADMINISTRACIÓN / ' + title : 'MI CUENTA / ' + title, 'account-eyebrow'));
   result.append(node('h3', title));
+  workspace.querySelector('.account-loading')?.remove();
   workspace.append(result);
   return result;
 }
@@ -72,11 +92,11 @@ function table(container, columns, records, actions) {
   result.append(head);
   const body = node('tbody');
   result.append(body);
-  const searchLabel = node('label', 'Buscar en esta lista');
+  const searchLabel = node('label', 'Buscar en esta lista', 'account-search');
   const search = node('input');
   search.type = 'search';
   searchLabel.append(search);
-  const navigation = node('div', undefined, 'account-actions');
+  const navigation = node('div', undefined, 'account-pagination');
   const count = node('span');
   count.setAttribute('role', 'status');
   let page = 0;
@@ -89,16 +109,24 @@ function table(container, columns, records, actions) {
     body.replaceChildren();
     for (const record of filtered.slice(page * 20, (page + 1) * 20)) {
       const row = node('tr');
-      for (const [key] of columns) row.append(node('td', record[key] ?? '—'));
+      for (const [key, label] of columns) {
+        const cell = node('td', record[key] ?? '—');
+        cell.dataset.label = label;
+        row.append(cell);
+      }
       if (actions) {
-        const cell = node('td', undefined, 'account-actions');
-        actions(record, cell);
+        const cell = node('td', undefined, 'account-row-actions');
+        cell.dataset.label = 'Acciones';
+        const group = node('div', undefined, 'account-actions');
+        actions(record, group);
+        cell.append(group);
         row.append(cell);
       }
       body.append(row);
     }
     previous.disabled = page === 0;
     next.disabled = (page + 1) * 20 >= filtered.length;
+    previous.hidden = next.hidden = filtered.length <= 20;
     count.textContent = filtered.length ? `${page * 20 + 1}–${Math.min((page + 1) * 20, filtered.length)} de ${filtered.length}` : 'Sin registros disponibles.';
   }
   search.addEventListener('input', () => { page = 0; renderRows(); });
@@ -151,7 +179,7 @@ function form(container, fields, submitText, save) {
 }
 
 function beginScreen() {
-  workspace.replaceChildren();
+  workspace.replaceChildren(node('p', 'Cargando sección…', 'account-loading'));
   return ++screenVersion;
 }
 
@@ -607,27 +635,31 @@ async function showPublicCatalog(offset = 0) {
   const version = ++catalogVersion;
   const host = $('#public-catalog');
   host.hidden = false;
+  syncAccountLayout();
   host.replaceChildren(node('p', 'Consultando catálogo…'));
   const data = await fetchData('/catalogo?limite=20&offset=' + offset);
   if (version !== catalogVersion) return;
   host.replaceChildren(node('h3', 'Prueba nuestros vehículos IoT'));
   host.append(node('p', 'Consulta las unidades configuradas para una prueba temporal y exclusiva.'));
+  const grid = node('div', undefined, 'catalog-grid');
   for (const model of data.modelos) {
     const card = node('article', undefined, 'catalog-model');
     const image = node('img');
     image.src = './assets/modelo-iot.svg';
-    image.alt = 'Ilustración genérica de vehículo IoT; no es una fotografía del modelo.';
+    image.alt = 'Ilustración genérica de vehículo IoT.';
     image.width = 160; image.height = 96; image.loading = 'lazy';
     card.append(image, node('h4', model.nombre), node('p', model.descripcion),
-      node('p', 'Capacidades habilitadas del modelo: ' + (model.capacidades.map(c => c.nombre).join(', ') || 'Sin capacidades publicadas.')));
-    host.append(card);
+      node('p', 'Funciones: ' + (model.capacidades.map(c => c.nombre.replaceAll('_', ' ')).join(', ') || 'Sin capacidades publicadas.')),
+      node('p', model.unidades_exhibicion + ' unidades de exhibición'),
+      button('Ver pruebas disponibles', () => showGuestUnits(model)));
+    grid.append(card);
   }
-  table(host, [['nombre', 'Modelo'], ['descripcion', 'Descripción'], ['unidades_exhibicion', 'Unidades de exhibición']], data.modelos,
-    (model, cell) => cell.append(button('Ver pruebas disponibles', () => showGuestUnits(model))));
+  if (!data.modelos.length) grid.append(node('p', 'No hay modelos publicados por el momento.'));
+  host.append(grid);
   const navigation = node('div', undefined, 'account-actions');
   if (offset > 0) navigation.append(button('Página anterior', () => showPublicCatalog(Math.max(0, offset - 20))));
   if (data.modelos.length === 20) navigation.append(button('Página siguiente', () => showPublicCatalog(offset + 20)));
-  navigation.append(button('Cerrar catálogo', () => { catalogVersion++; host.hidden = true; }));
+  navigation.append(button('Cerrar catálogo', closeCatalog));
   host.append(navigation);
 }
 
@@ -635,6 +667,7 @@ async function showGuestUnits(model) {
   const version = ++catalogVersion;
   const host = $('#public-catalog');
   host.hidden = false;
+  syncAccountLayout();
   host.replaceChildren(node('p', 'Consultando unidades…'));
   const data = await fetchData('/catalogo/' + model.id_modelo + '/unidades');
   if (version !== catalogVersion) return;
@@ -645,14 +678,37 @@ async function showGuestUnits(model) {
     (unit, cell) => {
       const reserve = button('Reservar prueba', async () => {
         reserve.disabled = true;
-        try { await reserveGuestTrial(unit); }
+        try { await reserveGuestTrial(unit); closeCatalog(); }
         finally { if (reserve.isConnected) reserve.disabled = !unit.disponible; }
       });
       reserve.disabled = !unit.disponible;
       cell.append(reserve);
     });
-  host.append(button('Actualizar disponibilidad', () => showGuestUnits(model)), button('Volver al catálogo', () => showPublicCatalog()));
+  const actions = node('div', undefined, 'account-actions');
+  actions.append(button('Actualizar disponibilidad', () => showGuestUnits(model)), button('Volver al catálogo', () => showPublicCatalog()), button('Cerrar catálogo', closeCatalog));
+  host.append(actions);
 }
+
+function syncAccountLayout() {
+  const browsing = !$('#public-catalog').hidden;
+  const trialVisible = !$('#guest-trial').hidden;
+  const user = currentUser();
+  $('#account-login').hidden = Boolean(user) || browsing || trialVisible;
+  $('#account-content').hidden = !user || browsing || trialVisible;
+  $('#account-signin').hidden = Boolean(user) || (!browsing && !trialVisible);
+  $('#account-catalog').textContent = browsing ? 'Cerrar catálogo público' : 'Explorar catálogo público';
+  $('#account-catalog').setAttribute('aria-expanded', String(browsing));
+  $('#account-location').textContent = trialVisible ? 'Prueba de Invitado' : browsing ? 'Catálogo público' : user ? currentSection : 'Acceso a mi cuenta';
+}
+
+function closeCatalog() {
+  catalogVersion++;
+  $('#public-catalog').hidden = true;
+  $('#public-catalog').replaceChildren();
+  syncAccountLayout();
+}
+
+document.addEventListener('iot:guest-view', syncAccountLayout);
 
 function showIdentity() {
   screenVersion++;
@@ -666,17 +722,43 @@ function showIdentity() {
   $('#tab-admin').textContent = user?.rol === 'ADMINISTRADOR' ? 'ADMINISTRACIÓN' : 'MI CUENTA';
   const menu = $('#account-menu');
   menu.replaceChildren();
+  $('#account-section-picker')?.remove();
+  closeCatalog();
   if (!user) return;
   const choices = user.rol === 'ADMINISTRADOR'
     ? [['Resumen', showSummary], ['Modelos', showModels], ['Unidades', showUnits], ['Compradores', showClients], ['Auditoría', showAudit], ['Demos de empresa', showCompanyDemos], ['Soporte autorizado', showAuthorizedSupport]]
     : [['Mis vehículos', showMyVehicles]];
-  for (const [label, action] of choices) menu.append(button(label, action));
+  for (const [label, action] of choices) {
+    const item = button(label, async () => { markSection(label); await action(); });
+    menu.append(item);
+  }
+  const picker = node('label', 'Sección de la cuenta', 'account-section-picker');
+  picker.id = 'account-section-picker';
+  const select = node('select');
+  select.id = 'account-section-select';
+  for (const [label] of choices) {
+    const option = node('option', label); option.value = label; select.append(option);
+  }
+  select.addEventListener('change', () => run(async () => {
+    const [label, action] = choices.find(([label]) => label === select.value);
+    markSection(label); await action();
+  }));
+  picker.append(select);
+  menu.before(picker);
+  markSection(choices[0][0]);
   run(choices[0][1]);
 }
 
 if (config.sessionAuth) {
   $('#account-catalog').hidden = false;
-  $('#account-catalog').addEventListener('click', () => run(() => showPublicCatalog()));
+  $('#account-catalog').addEventListener('click', () => run(() => $('#public-catalog').hidden ? showPublicCatalog() : closeCatalog()));
+  $('#account-signin').addEventListener('click', () => run(async () => {
+    await closeGuestTrial();
+    if (guestTrialActive()) return;
+    $('#guest-trial').hidden = true;
+    closeCatalog();
+    $('#account-login').querySelector('input').focus();
+  }));
   $('#control-account').hidden = false;
   $('#control-account').addEventListener('click', () => $('#tab-admin').click());
   $('#tab-admin').hidden = false;

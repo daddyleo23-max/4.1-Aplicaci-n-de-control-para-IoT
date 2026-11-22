@@ -15,6 +15,8 @@ let commands;
 let buttons = [];
 let startPending = false;
 let closeButton;
+export function guestTrialActive() { return Boolean(token || startPending); }
+
 const host = () => document.querySelector('#guest-trial');
 
 function node(tag, text, className) {
@@ -51,7 +53,13 @@ export async function closeGuestTrial(message = 'Prueba finalizada.') {
     token = '';
     status.textContent = message + ' El servidor procesó la solicitud de parada.';
     remaining.textContent = 'Prueba terminada';
-    closeButton.textContent = 'Prueba finalizada';
+    closeButton.textContent = 'Cerrar prueba';
+    closeButton.disabled = false;
+    closeButton.onclick = () => {
+      if (token || startPending) return;
+      host().hidden = true;
+      document.dispatchEvent(new CustomEvent('iot:guest-view'));
+    };
   } catch (error) {
     if (version !== epoch) return;
     status.textContent = 'No se confirmó el cierre. ' + error.message + ' Puedes reintentarlo; la reserva tiene caducidad en el servidor.';
@@ -88,6 +96,8 @@ export async function reserveGuestTrial(unit) {
   const version = ++epoch;
   const area = host();
   area.hidden = false;
+  document.dispatchEvent(new CustomEvent('iot:guest-view'));
+  area.scrollIntoView({ behavior: 'smooth', block: 'start' });
   area.replaceChildren(node('h3', 'Prueba de ' + unit.nombre));
   status = node('p', 'Solicitando reserva exclusiva…');
   status.setAttribute('role', 'status');
@@ -162,6 +172,16 @@ export async function reserveGuestTrial(unit) {
     if (version === epoch) {
       status.textContent = error.message;
       if (token) void closeGuestTrial('La prueba no pudo iniciarse.');
+      else {
+        const back = node('button', 'Cerrar prueba');
+        back.type = 'button';
+        back.addEventListener('click', () => {
+          if (guestTrialActive()) return;
+          area.hidden = true;
+          document.dispatchEvent(new CustomEvent('iot:guest-view'));
+        });
+        area.append(back);
+      }
     }
     throw error;
   } finally {
