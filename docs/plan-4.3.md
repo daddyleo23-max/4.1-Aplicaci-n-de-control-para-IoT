@@ -1120,3 +1120,25 @@ final validada. Quedan selección del esquema/datos finales, configuración del
 servicio público/Caddy, HTTPS/WSS, móvil y evidencias colaborativas. Se entrega
 diagnóstico Windows de sólo lectura para conocer el despliegue vigente sin
 leer secretos ni detener servicios.
+
+
+## Preparación del despliegue público tras diagnóstico real
+
+El informe diagnostico_publicacion_20261122-191417 confirma Caddy en80/443,
+configuración C:\caddy\Caddyfile.prod, sitio34.194.45.28 y proxy127.0.0.1:8000.
+API8000 sigue1.0.0; API8001 es4.3.0 y frontend de prueba8080. No hay servicios
+Windows detectados con los nombres consultados; no se presume arranque automático.
+
+Se prepara vehiculo_iot_43 como restauración nueva de la copia001–020 aprobada,
+conservando cuentas, IDs, historial y fixtures. Se verifica todo el contenido y
+estructura antes de conceder EXECUTE a la cuenta limitada. Rechaza destino ya
+existente y no toca el esquema original ni la configuración de Caddy. El origen
+requiere backend8001 detenido para evitar escrituras durante el respaldo.
+
+Verificación local MySQL8.4.13: dump/restore real, igualdad integral de las19
+tablas, datos, columnas, índices, FK, CHECK, rutinas/parámetros y triggers;
+rechazo de sobrescritura; cuenta limitada y arranque dedicado8002 comprobados.
+El launcher fuerza modo sesiones y esquema final sin editar el .env original.
+Pendiente: ejecución de este preparador en RDS por el alumno, validación8002,
+candidato Caddy, publicación del frontend y recorrido público. No se ha
+activado aún ningún cambio público en este paso.

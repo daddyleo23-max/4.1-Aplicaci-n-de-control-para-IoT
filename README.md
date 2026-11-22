@@ -30,6 +30,7 @@ Si la entrega022 falló en 019 con ERROR1832, usar la [recuperación específica
 - [Arquitectura, ER y roles](docs/arquitectura-4.3.md)
 - [Inventario de contratos antes/después](docs/inventario-contratos-4.3.md)
 - [Contratos HTTP/WS](docs/contratos-4.3.md) y [OpenAPI generado](docs/openapi-4.3.json)
+- [Preparación de la base y backend definitivos](docs/publicacion-4.3.md)
 - [Migraciones, instrucciones Windows, despliegue y recuperación](docs/despliegue-4.3.md)
 - [Matriz de evaluación P01–P17 y rotaciones](docs/matriz-4.3.md)
 - [Revisión de pendientes y estado de cierre](docs/revision-final-4.3.md)
