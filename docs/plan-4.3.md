@@ -607,3 +607,18 @@ Para volver a un backend anterior se deben cerrar las reservas y verificar
 reservas_control vacía antes del cambio, conservando tablas e historial.
 La recepción física de DETENER y los límites reales siguen requiriendo
 validación del firmware y temporizador de seguridad del microcontrolador.
+
+## Validación real de la API 012 completada
+
+El usuario aplicó 012 con MySQL 0 y conservación=True. Informe
+migracion_012_20261122-045454-823136.json. Después pasó el recorrido completo
+de probar_invitados_http.py en Windows/RDS, incluidos exclusividad, permisos,
+pulso, eventos ADELANTE/DETENER, segundo canal rechazado sin afectar al primero,
+cancelación, desconexión, caducidad real y auditoría. Los registros nuevos
+quedaron privados e inactivos. Informe http_invitados_332691ebc73f.json.
+Esto verifica solicitudes y eventos sobre una unidad nueva sin hardware.
+Se corrigió el aviso de deprecación del cliente WS para abrirlo dentro de su
+context manager antes de enviar autenticación. No requiere repetir la prueba
+real aprobada ni modificar el backend por ese aviso.
+Siguiente bloque: integrar configuración, reserva, controles limitados y
+contador de Invitado en la interfaz existente; el diseño se ajustará después.

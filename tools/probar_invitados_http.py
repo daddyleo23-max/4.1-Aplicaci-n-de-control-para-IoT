@@ -1,5 +1,6 @@
 """Prueba real de la API de Invitado en 8001 con una unidad nueva sin hardware."""
 from datetime import datetime, timezone
+from contextlib import contextmanager
 import getpass
 import json
 from pathlib import Path
@@ -69,12 +70,13 @@ def main():
             time.sleep(0.25)
         record(label, False)
 
+    @contextmanager
     def socket(token):
-        ws = connect(BASE.replace("http", "ws", 1) + "/ws/invitados", open_timeout=10, close_timeout=3)
-        ws.send(json.dumps({"tipo": "autenticar", "token": token}))
-        first = json.loads(ws.recv(timeout=10))
-        record("WebSocket inicial del Invitado", first["tipo"] == "estado_inicial" and first["id_vehiculo"] == unit_id)
-        return ws
+        with connect(BASE.replace("http", "ws", 1) + "/ws/invitados", open_timeout=10, close_timeout=3) as ws:
+            ws.send(json.dumps({"tipo": "autenticar", "token": token}))
+            first = json.loads(ws.recv(timeout=10))
+            record("WebSocket inicial del Invitado", first["tipo"] == "estado_inicial" and first["id_vehiculo"] == unit_id)
+            yield ws
 
     try:
         original = original_unit()
