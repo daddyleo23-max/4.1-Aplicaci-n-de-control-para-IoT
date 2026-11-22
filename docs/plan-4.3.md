@@ -496,3 +496,32 @@ siete rutinas sp_invitado_* y cinco triggers antes de reintentar. Los 21 SP y
 registros originales se conservan. Para retirar esta ampliación sin pérdida
 se pueden deshabilitar sus consumidores, conservar tablas/historial y revisar
 los triggers añadidos. No se presupone reversión por ROLLBACK del DDL.
+
+## 011 parcial en RDS: error 1419 y recuperación preparada
+
+El usuario ejecutó 011 en RDS y reportó MySQL 1, conservación de datos/SP
+originales=True y las 16 tablas presentes. La ejecución se detuvo en el primer
+CREATE TRIGGER con ERROR 1419 por registro binario activo sin privilegio SUPER.
+Informe migracion_011_20261122-034119-568602.json. La validación local MariaDB
+sin binlog no había reproducido esta restricción específica de RDS.
+
+AWS documenta el requisito y el parámetro de grupo log_bin_trust_function_creators:
+https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_Troubleshooting.html
+No se modificaron permisos ni parámetros de AWS desde el agente. El ejecutor
+general ahora comprueba binlog/trust antes de ejecutar DDL con CREATE TRIGGER.
+
+recuperar_reservas_011.py compara el hash de la fuente contra el informe previo,
+exige copia aislada, tablas esperadas, versiones previas y tablas de reservas
+vacías. Compara las siete definiciones de rutina y cualquier trigger existente.
+El modo --diagnostico sólo consulta. La recuperación crea únicamente triggers
+faltantes y registra 011 después de verificar los cinco y conservar los datos
+y procedimientos originales. No repite CREATE TABLE ni reemplaza rutinas.
+Si sigue binlog activo con trust=0 se detiene antes de ejecutar DDL.
+
+66 pruebas locales pasaron. Se recreó un estado parcial local sin triggers
+ni registro 011 y se comprobó la CLI completa: diagnóstico sin cambios,
+recuperación de cinco triggers y repetición sin duplicarlos. Se ignoran sólo
+comentarios de línea y diferencias de espacio al comparar definiciones,
+porque el motor puede omitir comentarios en ROUTINE_DEFINITION.
+La recuperación real en RDS y la configuración del grupo de parámetros
+continúan pendientes del diagnóstico y de la acción del usuario en AWS.

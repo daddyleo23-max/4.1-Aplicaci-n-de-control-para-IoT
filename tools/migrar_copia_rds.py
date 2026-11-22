@@ -22,6 +22,20 @@ def quote(name):
     return "`" + name.replace("`", "``") + "`"
 
 
+def check_trigger_configuration(cursor, sql_text):
+    """Preflight para RDS: evitar DDL parcial al crear triggers con binlog."""
+    if not re.search(r"\bCREATE\s+TRIGGER\b", sql_text, re.IGNORECASE):
+        return
+    cursor.execute("SELECT @@log_bin AS binary_logging, "
+                   "@@log_bin_trust_function_creators AS trust_creators")
+    settings = cursor.fetchone()
+    if settings["binary_logging"] and not settings["trust_creators"]:
+        raise SystemExit(
+            "RDS tiene registro binario activo y log_bin_trust_function_creators=0. "
+            "Revisa el grupo de parámetros antes de crear triggers. No se ejecutó el SQL."
+        )
+
+
 def snapshot(cursor, schema):
     data = {"tablas": {}, "procedimientos": []}
     for name in sorted(BASE_TABLES):
@@ -135,6 +149,7 @@ def main():
     try:
         with connection.cursor() as cursor:
             cursor.execute("SET time_zone = '+00:00'")
+            check_trigger_configuration(cursor, sql.read_text(encoding="utf-8"))
             cursor.execute("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'")
             names = {list(row.values())[0] for row in cursor.fetchall()}
             if names != expected_tables:
