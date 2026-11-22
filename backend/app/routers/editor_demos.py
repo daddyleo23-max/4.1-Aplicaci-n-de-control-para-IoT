@@ -22,7 +22,7 @@ class DemoStep(BaseModel):
 
 
 class DemoDocument(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
     id_vehiculo: int = Field(gt=0)
     nombre: str = Field(min_length=1, max_length=80)
     descripcion: str = Field(default="", max_length=255)
@@ -49,7 +49,9 @@ def visible_demo(session, demo_id):
 def save_document(data, session, demo_id=None):
     check_unit_access(session, resource_context("vehiculo", data.id_vehiculo))
     if demo_id is not None:
-        visible_demo(session, demo_id)
+        current = visible_demo(session, demo_id)
+        if current['tipo'] == 'EMPRESA' and session['rol'] != 'ADMINISTRADOR':
+            raise HTTPException(403, 'Las demos de empresa son de sólo lectura para el comprador.')
         if data.revision is None:
             raise HTTPException(422, "Se requiere la revisión actual de la demo.")
     parameters = (

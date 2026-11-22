@@ -61,7 +61,7 @@ class DemoEditorTests(unittest.TestCase):
         self.data["revision"] = 1
         with patch.object(editor_demos, "resource_context", return_value={
             "id_propietario": 5, "activo": 1,
-        }), patch.object(editor_demos.service, "ejecutar_consulta", return_value=[{"id_demo": 3}]), patch.object(
+        }), patch.object(editor_demos.service, "ejecutar_consulta", return_value=[{"id_demo": 3, "tipo": "PRIVADA", "id_propietario": 5}]), patch.object(
             editor_demos.service, "ejecutar_consulta_transaccional",
             side_effect=pymysql.OperationalError(1644, "La demo cambió"),
         ):

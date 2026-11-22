@@ -998,3 +998,52 @@ para localhost8001 y probar_capacidades_http.py (pide admin de app, usa unidad
 NUEVA sin hardware y conserva pruebas privadas/inactivas). Primero actualizar
 backend y comprobar script; después actualizar frontend. Sin SQL adicional,
 sin secretos ni publicación en Pages todavía.
+
+## Demos de empresa y cierre de secuencia (entrega021, sin migración)
+
+El usuario confirmó visualización de capacidades/comandos en Administración
+con las capturas de modelos y unidades de prueba. El bloqueo de edición del
+modelo inactivo y los campos ID/código/habilitado/compatible se mostraron
+correctamente. Las 41 comprobaciones HTTP/RDS de la entrega020 ya estaban
+aprobadas (capacidades_http_cda2782bb799.json); no se supone una edición manual
+de descripción adicional si el usuario sólo confirmó lectura de vistas.
+
+La base 007/008 ya conserva EMPRESA sin propietario privado y PRIVADA con
+propietario. Se reutiliza, sin SQL nuevo. Se añade entrada explícita Demos
+de empresa al menú administrativo, con unidades activas sin comprador para
+preparar secuencias de fábrica. Tras asignar, comprador ve/ejecuta EMPRESA
+pero sólo edita PRIVADA. La empresa no recupera acceso operativo ni privado
+a unidades vendidas por esta función; soporte sigue limitado a manual.
+El editor distingue nuevas demos de empresa/privadas. Las inactivas no se
+ofrecen para Seleccionar en control. Si no hay comandos compatibles, se
+muestra estado vacío antes de ofrecer creación. El servidor rechaza 403 al
+comprador que intenta editar fábrica y 422 si intenta imponer tipo/propietario
+en el documento: esos valores los determina el servidor, no el navegador.
+
+Corrección de ejecución: fin normal llama _detener_seguro antes de emitir
+demo_fin; emite comando=DETENER y su código real. Actualiza estado, NO inserta
+los pasos ni este cierre en historial individual. Si falla la solicitud de
+parada no se publica éxito, sino demo_error. El STOP manual administrativo
+durante una demo sin comprador también cancela y espera la tarea fuera del
+bloqueo, evitando reanudación por pasos posteriores. La operación se espera
+aunque se cancele el HTTP. El historial sigue registrando el STOP manual
+como individual y conserva máximo10. No demuestra recepción física.
+
+Verificación local: se reconstruyó una BD desechable a partir de columnas,
+índices, relaciones y definiciones de las21 SP del inventario aportado,
+aplicando 001–018. Motor MariaDB y collation normalizada, no equivale a RDS8.4;
+no se modificó la base remota. Se usaron las versiones de requirements.txt
+en entorno virtual temporal. 121 pruebas unitarias correctas; incluyen
+parada antes de fin, fallo de parada sin éxito falso, ausencia de historial
+individual de pasos, tipo no imponible y STOP administrativo con cancelación.
+56 comprobaciones HTTP/WSS locales correctas en modelos/unidades NUEVOS sin
+hardware (demos_empresa_e32718773201.json): persistencia/orden/revisión,
+rechazo de comando ajeno, fin con DETENER, historial intacto, interrupción de
+demo larga, asignación a comprador, fábrica sólo lectura, privada ligada al
+dueño, rechazo a empresa/comprador ajeno y ejecución de fábrica con reserva.
+Se conservan modelo privado/unidad asignada por auditoría y se desactivan
+compradores y unidad secundaria de prueba. No se opera la unidad1 original.
+Navegador local: entrada Demos de empresa, selección de unidad y apertura
+del editor de fábrica comprobadas. Falta validación real Windows/RDS y del
+nuevo menú por el usuario. Paquete entrega_021_demos_empresa.zip contiene
+backend, frontend y script; requiere SQL018 existente, sin migración nueva.

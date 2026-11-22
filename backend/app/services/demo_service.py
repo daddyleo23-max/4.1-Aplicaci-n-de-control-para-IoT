@@ -151,10 +151,8 @@ class DemoService:
                 if movimiento["pausa_ms"]:
                     await asyncio.sleep(movimiento["pausa_ms"] / 1000)
 
-            await manager.enviar_a_vehiculo(
-                id_vehiculo,
-                self._evento("demo_fin", id_vehiculo, id_demo),
-            )
+            # Completar la secuencia incluye solicitar STOP, sin historial individual.
+            await self._detener_seguro(id_vehiculo, id_demo, "demo_fin")
 
         except asyncio.CancelledError:
             await self._detener_seguro(
@@ -173,7 +171,7 @@ class DemoService:
 
     async def _detener_seguro(
         self, id_vehiculo: int, id_demo: int, tipo_evento: str
-    ) -> None:
+    ) -> bool:
         try:
             comandos = await asyncio.to_thread(
                 self.servicio.ejecutar_consulta,
@@ -181,7 +179,7 @@ class DemoService:
                 (id_vehiculo,),
             )
             detener = next(
-                (c for c in comandos if c["nombre"] == "DETENER"),
+                (c for c in comandos if c["nombre"] == "DETENER" and c["activo"]),
                 None,
             )
 
@@ -206,20 +204,21 @@ class DemoService:
                     **self._evento(tipo_evento, id_vehiculo, id_demo),
                     "comando_seguridad": "DETENER",
                     "id_comando": detener["id_comando"],
+                    "comando": "DETENER",
+                    "codigo": detener["codigo"],
                 }
             else:
-                evento = {
-                    **self._evento(tipo_evento, id_vehiculo, id_demo),
-                    "advertencia": "No se encontró el comando DETENER.",
-                }
+                raise RuntimeError("No se encontró DETENER activo.")
 
             await manager.enviar_a_vehiculo(id_vehiculo, evento)
+            return True
 
         except Exception:
             await manager.enviar_a_vehiculo(
                 id_vehiculo,
                 self._evento("demo_error", id_vehiculo, id_demo),
             )
+            return False
 
     @staticmethod
     def _evento(tipo: str, id_vehiculo: int, id_demo: int) -> dict:

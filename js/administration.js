@@ -409,14 +409,30 @@ async function showAuthorizedSupport() {
   section.append(button('Actualizar permisos', showAuthorizedSupport));
 }
 
+async function showCompanyDemos() {
+  const version = beginScreen();
+  const data = await fetchData('/admin/unidades?limite=100');
+  if (version !== screenVersion) return;
+  const section = panel('Demos de empresa');
+  section.append(node('p', 'Prepara las secuencias de fábrica en unidades activas sin comprador. Al asignarlas, el comprador podrá consultarlas y ejecutarlas; sus demos privadas se mantienen separadas.'));
+  table(section, [['identificador_unidad', 'Identificador'], ['nombre', 'Unidad'], ['nombre_modelo', 'Modelo']],
+    data.unidades.filter(unit => unit.activo && !unit.id_propietario),
+    (unit, cell) => cell.append(button('Administrar demos de empresa', () => showDemos(unit.id_vehiculo))));
+  section.append(button('Actualizar unidades', showCompanyDemos));
+}
+
 async function showDemos(vehicleId = config.vehicleId) {
   const version = beginScreen();
   const [data, catalog] = await Promise.all([
     fetchData('/mis-demos?id_vehiculo=' + vehicleId), fetchData('/vehiculos/' + vehicleId + '/comandos'),
   ]);
   if (version !== screenVersion) return;
-  const section = panel('Secuencias DEMO');
-  section.append(button('Nueva demo', () => demoEditor(vehicleId, catalog.comandos)));
+  const company = currentUser()?.rol === 'ADMINISTRADOR';
+  const section = panel(company ? 'Demos de empresa' : 'Demos privadas y de empresa');
+  section.append(node('p', company ? 'Las secuencias guardadas aquí pertenecen a la empresa. Usa sólo comandos y duraciones comprobados para esta unidad.' : 'Puedes crear y editar tus demos privadas. Las secuencias de empresa son de sólo lectura.'));
+  if (catalog.comandos.some(c => c.activo && !['DEMO', 'AUTO_DEMO', 'AUTO DEMO'].includes(c.nombre.toUpperCase()))) {
+    section.append(button(company ? 'Nueva demo de empresa' : 'Nueva demo privada', () => demoEditor(vehicleId, catalog.comandos)));
+  } else section.append(node('p', 'No hay comandos compatibles habilitados para crear una demo. Configura primero el catálogo de la unidad.'));
   table(section, [['nombre', 'Nombre'], ['tipo', 'Tipo'], ['revision', 'Revisión'], ['activo', 'Activa']],
     data.demos, (demo, cell) => {
       const editable = demo.tipo === 'PRIVADA' || currentUser()?.rol === 'ADMINISTRADOR';
@@ -424,7 +440,7 @@ async function showDemos(vehicleId = config.vehicleId) {
         const detail = await fetchData('/mis-demos/' + demo.id_demo);
         demoEditor(vehicleId, catalog.comandos, detail);
       }));
-      cell.append(button('Seleccionar en control', async () => {
+      if (demo.activo) cell.append(button('Seleccionar en control', async () => {
         selectVehicle(vehicleId);
         $('#tab-control').click();
         document.dispatchEvent(new CustomEvent('iot:choose-demo', { detail: { id: demo.id_demo } }));
@@ -434,7 +450,7 @@ async function showDemos(vehicleId = config.vehicleId) {
 
 function demoEditor(vehicleId, commands, detail) {
   beginScreen();
-  const section = panel(detail ? 'Editar secuencia' : 'Nueva secuencia');
+  const section = panel(detail ? 'Editar secuencia' : currentUser()?.rol === 'ADMINISTRADOR' ? 'Nueva demo de empresa' : 'Nueva demo privada');
   const demo = detail?.demo || {};
   const allowed = commands.filter(command => command.activo && !['DEMO', 'AUTO_DEMO', 'AUTO DEMO'].includes(command.nombre.toUpperCase()));
   const editor = form(section, [
@@ -607,7 +623,7 @@ function showIdentity() {
   menu.replaceChildren();
   if (!user) return;
   const choices = user.rol === 'ADMINISTRADOR'
-    ? [['Resumen', showSummary], ['Modelos', showModels], ['Unidades', showUnits], ['Compradores', showClients], ['Auditoría', showAudit], ['Soporte autorizado', showAuthorizedSupport]]
+    ? [['Resumen', showSummary], ['Modelos', showModels], ['Unidades', showUnits], ['Compradores', showClients], ['Auditoría', showAudit], ['Demos de empresa', showCompanyDemos], ['Soporte autorizado', showAuthorizedSupport]]
     : [['Mis vehículos', showMyVehicles]];
   for (const [label, action] of choices) menu.append(button(label, action));
   run(choices[0][1]);
