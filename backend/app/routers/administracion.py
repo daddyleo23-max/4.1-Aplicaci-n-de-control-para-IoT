@@ -101,7 +101,14 @@ def create(procedure, parameters):
 
 @router.get("/resumen")
 def summary(session: dict = Depends(require_admin)):
-    return service.ejecutar_consulta("sp_admin_resumen")[0]
+    from app.resource_security import sessions_enabled
+    from app.services.guest_service import guest_service
+    result = service.ejecutar_consulta("sp_admin_resumen")[0]
+    # SQL counts eligibility; recovery must also have completed before a trial can start.
+    result["pruebas_habilitadas"] = sessions_enabled() and guest_service.ready
+    if not result["pruebas_habilitadas"]:
+        result["unidades_prueba_libres"] = 0
+    return result
 
 
 @router.get("/modelos")

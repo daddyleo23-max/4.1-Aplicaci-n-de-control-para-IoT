@@ -21,38 +21,11 @@ async def registrar_movimiento(
     request: Request,
 ):
     from app.resource_security import sessions_enabled
-    from app.services.demo_service import demo_service
-    if sessions_enabled() and (request.state.session['rol'] == 'USUARIO' or getattr(request.state, 'support_operation', False)):
+    if sessions_enabled():
         from app.services.control_service import control_service
         return await control_service.move(request.state.session,id_vehiculo,movimiento.id_comando)
-    if sessions_enabled():
-        from app.services.control_service import complete
-        return await complete(_registrar_sesion_admin(id_vehiculo, movimiento))
 
     return await _registrar_movimiento(id_vehiculo, movimiento)
-
-
-async def _registrar_sesion_admin(id_vehiculo, movimiento):
-    from app.services.demo_service import demo_service
-    import asyncio
-    from contextlib import suppress
-    commands = servicio.ejecutar_consulta('sp_obtener_comandos_vehiculo', (id_vehiculo,))
-    stop = any(c['id_comando'] == movimiento.id_comando and c['nombre'] == 'DETENER' and c['activo'] for c in commands)
-    while True:
-        pending_demo = None
-        async with demo_service.bloqueo:
-            task = demo_service.tareas.get(id_vehiculo)
-            if task is not None and not task.done():
-                if not stop:
-                    raise HTTPException(409, 'Cancela la demo antes de enviar otro movimiento.')
-                task.cancel()
-                pending_demo = task
-            else:
-                return await _registrar_movimiento(id_vehiculo, movimiento)
-        # La demo necesita este mismo bloqueo para finalizar: esperar fuera.
-        if pending_demo is not None:
-            with suppress(asyncio.CancelledError):
-                await pending_demo
 
 
 async def _registrar_movimiento(id_vehiculo, movimiento):

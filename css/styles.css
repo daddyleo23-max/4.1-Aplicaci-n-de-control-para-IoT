@@ -456,3 +456,20 @@ body.control-expanded{overflow:hidden}
 #buyer-control{grid-template-columns:auto minmax(0,1fr) auto}#buyer-control p{margin:0;font-size:.85rem}
 @media(max-width:600px){#buyer-control{grid-template-columns:1fr}#buyer-control .account-actions{display:flex;flex-wrap:wrap}}
 @media(max-width:1000px) and (orientation:landscape){.commands-panel #buyer-control:not([hidden]){display:flex!important;position:fixed;top:6px;left:50%;transform:translateX(-50%);z-index:45;gap:8px;max-width:70vw;padding:5px 8px;margin:0}#buyer-control>strong{display:none}#buyer-control p{font-size:10px;max-width:25vw}#buyer-control button{min-height:30px;padding:4px 8px;font-size:11px}#buyer-control .account-actions{flex-wrap:nowrap}}
+
+/* Catálogo: asset contenido en su tarjeta; conserva el espacio del control. */
+.catalog-model{display:flex;flex-wrap:wrap;align-items:center;gap:1rem;padding:1rem;border:1px solid #38443b;border-radius:12px;margin-block:1rem}
+.catalog-model h4{flex:1;min-width:10rem}.catalog-model p{flex-basis:100%;margin:0}
+.account-panel input[type=search]{width:100%;margin-block:.5rem 1rem}
+.account-actions>span{align-self:center}.account-actions{gap:.5rem}
+/* Administración conserva el ancho disponible y desplaza sólo sus tablas. */
+.page-wrap,.account-view,#account-content{min-width:0}
+.account-view{width:100%}
+.account-table{min-width:640px}
+@media(max-width:600px){
+  .view-nav{gap:3px}.view-tab{padding-inline:5px;font-size:9px;letter-spacing:.04em}
+  .account-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .account-menu button{min-width:0;overflow-wrap:anywhere}
+  .account-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .account-metrics>div{padding:14px}.account-metrics span{font-size:12px}
+}

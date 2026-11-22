@@ -31,7 +31,9 @@ class AdminTests(unittest.TestCase):
             administracion.service, "ejecutar_consulta", return_value=[{"modelos_activos": 3}],
         ) as query:
             response = self.client.get("/admin/resumen", headers=self.headers)
-        self.assertEqual(response.json(), {"modelos_activos": 3})
+        self.assertEqual(response.json()["modelos_activos"], 3)
+        self.assertEqual(response.json()["unidades_prueba_libres"], 0)
+        self.assertFalse(response.json()["pruebas_habilitadas"])
         query.assert_called_once_with("sp_admin_resumen")
 
     def test_duplicate_model_returns_conflict(self):

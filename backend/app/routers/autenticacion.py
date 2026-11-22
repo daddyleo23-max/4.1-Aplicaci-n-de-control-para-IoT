@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 import secrets
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Response, Request
 from pydantic import BaseModel, Field
 
 from app.passwords import hash_password, verify_password
@@ -23,10 +23,14 @@ def public_user(row: dict) -> dict:
     return {key: row[key] for key in ("id_usuario", "nombre", "correo", "rol")}
 
 
-@router.post("/login")
-def login(data: LoginRequest, response: Response):
+@router.post("/login", summary="Iniciar sesión de aplicación",
+             responses={401: {"description": "Credenciales inválidas o cuenta inactiva"},
+                        429: {"description": "Límite de intentos; Retry-After indica segundos de espera"}})
+def login(data: LoginRequest, response: Response, request: Request):
     from fastapi import HTTPException
 
+    from app.login_limits import login_limiter
+    login_limiter.check(request.client.host if request.client else "unknown", data.correo)
     response.headers["Cache-Control"] = "no-store"
     rows = service.ejecutar_consulta(
         "sp_auth_buscar_usuario", (data.correo.strip().lower(),),

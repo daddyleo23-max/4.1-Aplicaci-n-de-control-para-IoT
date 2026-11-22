@@ -1047,3 +1047,38 @@ Navegador local: entrada Demos de empresa, selección de unidad y apertura
 del editor de fábrica comprobadas. Falta validación real Windows/RDS y del
 nuevo menú por el usuario. Paquete entrega_021_demos_empresa.zip contiene
 backend, frontend y script; requiere SQL018 existente, sin migración nueva.
+
+## Cierre funcional: entrega 022 (SQL019–020)
+
+La entrega 021 fue validada por el usuario en RDS: informe
+`demos_empresa_1e4ce21b54e6.json`; captura confirma menú/listado de empresa.
+
+La revisión integral identificó pendientes y este bloque añade exclusividad
+por sesión para empresa sobre inventario sin comprador; dos administradores
+no operan simultáneamente. Mantiene reserva de comprador, Invitado y soporte.
+019 añade la referencia de unidad a sesiones_control sin cambiar sus IDs ni
+las asignaciones históricas. 020 añade lectura de capacidades públicas y
+métricas de demos EMPRESA y disponibilidad efectiva. Se conserva la prioridad
+DETENER y la recuperación de reservas. Requiere cerrar reservas antes del DDL.
+
+Login tiene límite por cuenta/dirección, memoria acotada y 429/Retry-After.
+Catálogo muestra capacidades activas publicadas y SVG genérico, nunca foto
+atribuida al producto. Dashboard contiene resumen, búsqueda y accesos CRUD.
+Listas y selectores recorren todas las páginas API; tablas filtran y paginan
+20 registros. La pestaña de Admin se llama ADMINISTRACIÓN. Ajustes móviles de
+menú, tarjetas y tablas horizontales conservan la distribución de control.
+
+Verificación local: migraciones instaladas en MariaDB 12.3.2 reconstruida,
+125 pruebas unitarias; SQL de dos administradores distintos y regresión SQL
+comprador/Invitado; HTTP/WS de cierre, capacidades, demos de empresa,
+comprador, soporte operativo e Invitado. Las pruebas temporales verificaron
+caducidad real. El primer ensayo HTTP Invitado concurrente con otras suites
+recibió 409 por operación en curso; la ejecución secuencial completa pasó.
+No se presentó ese ensayo fallido como aprobación. En navegador se comprobó
+búsqueda de la fila 001 de una colección de más de 100, catálogo y resumen
+móvil emulado, sin errores de consola. Capturas en docs/capturas-locales son
+fixtures locales, no evidencia pública ni de hardware.
+
+Documentación consolidada en arquitectura-4.3, contratos-4.3, despliegue-4.3 y
+matriz-4.3. RDS/Windows 019–020 y recorrido público siguen pendientes. No se
+publica automáticamente ni se modifica el esquema original del usuario.

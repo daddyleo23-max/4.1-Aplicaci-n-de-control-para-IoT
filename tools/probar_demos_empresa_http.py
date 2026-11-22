@@ -71,17 +71,20 @@ def main():
         check('Comando de otra unidad rechazado',409,'POST','/mis-demos',{**doc,'nombre':'Rechazada '+suffix,'pasos':[{'id_comando':commands[1]['ADELANTE'],'duracion_ms':100,'pausa_ms':0}]})
         stored=check('Verificar orden persistido',200,'GET',f'/mis-demos/{demo}')
         record('Orden y duración guardados',[(p['orden'],p['id_comando']) for p in stored['pasos']]==[(1,commands[0]['DETENER']),(2,commands[0]['ADELANTE'])])
+        company=check('Empresa reserva unidad',201,'POST',f'/vehiculos/{unit}/control/reservar')['id_control'];leases.append((company,admin))
         before=check('Historial individual antes',200,'GET',f'/vehiculos/{unit}/historial')['historial']
-        with channel(f'/ws/vehiculos/{unit}',admin,'estado_inicial') as ws:
+        with channel(f'/ws/control/{company}',admin,'control_autorizado') as ws:
             check('Ejecutar demo como empresa',202,'POST',f'/vehiculos/{unit}/demos/{demo}/iniciar')
             finished(ws)
-        state=check('Estado final consultado',200,'GET',f'/vehiculos/{unit}/estado')
-        record('Estado final es DETENER',state['id_comando']==commands[0]['DETENER'])
-        after=check('Historial individual después',200,'GET',f'/vehiculos/{unit}/historial')['historial']
-        record('Pasos y cierre de demo no se convierten en movimientos individuales',before==after)
+            state=check('Estado final consultado',200,'GET',f'/vehiculos/{unit}/estado')
+            record('Estado final es DETENER',state['id_comando']==commands[0]['DETENER'])
+            after=check('Historial individual después',200,'GET',f'/vehiculos/{unit}/historial')['historial']
+            record('Pasos y cierre de demo no se convierten en movimientos individuales',before==after)
+        check('Cerrar primera reserva empresa',200,'POST',f'/control/{company}/cerrar')
         long_doc={**doc,'revision':stored['demo']['revision'],'pasos':[{'id_comando':commands[0]['ADELANTE'],'duracion_ms':10000,'pausa_ms':0}]}
         updated=check('Preparar demo larga para prioridad STOP',200,'POST',f'/mis-demos/{demo}/guardar',long_doc)
-        with channel(f'/ws/vehiculos/{unit}',admin,'estado_inicial') as ws:
+        company=check('Empresa reserva para STOP',201,'POST',f'/vehiculos/{unit}/control/reservar')['id_control'];leases.append((company,admin))
+        with channel(f'/ws/control/{company}',admin,'control_autorizado') as ws:
             check('Iniciar demo larga',202,'POST',f'/vehiculos/{unit}/demos/{demo}/iniciar')
             deadline=time.monotonic()+10
             while time.monotonic()<deadline:
@@ -95,6 +98,7 @@ def main():
                 event=json.loads(ws.recv(timeout=max(.1,until-time.monotonic())))
                 if event.get('tipo')=='demo_cancelada':cancelled=True;break
             record('Cancelación de empresa recibida sin pasos posteriores',cancelled)
+        check('Cerrar reserva tras STOP',200,'POST',f'/control/{company}/cerrar')
         check('Restaurar secuencia corta',200,'POST',f'/mis-demos/{demo}/guardar',{**edited,'revision':updated['revision']})
         owner_id,owner=buyer('A');_,outsider=buyer('B')
         check('Asignar unidad con demo de fábrica',200,'POST',f'/admin/unidades/{unit}/asignar',{'id_usuario':owner_id})

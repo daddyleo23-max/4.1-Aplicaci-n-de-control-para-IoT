@@ -5,6 +5,7 @@ import getpass
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -15,7 +16,10 @@ from datetime import datetime, timezone
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mysqldump", help="Ruta al ejecutable mysqldump.exe")
+    parser.add_argument("--copia", help="Respaldar una copia aislada en lugar del esquema original")
     args = parser.parse_args()
+    if args.copia and not re.fullmatch(r"iot_prueba_\d{8}_\d{6}_\d{6}", args.copia):
+        raise SystemExit("Indica un nombre válido de copia aislada.")
     root = Path.cwd()
     if not (root / "app" / "config.py").is_file():
         raise SystemExit("Ejecuta desde la raíz del backend, junto a app.")
@@ -34,12 +38,14 @@ def main():
     sys.path.insert(0, str(root))
     from app.config import DB_HOST, DB_PORT, DB_NAME
 
+    schema = args.copia or DB_NAME
+    print("Esquema a respaldar:", schema)
     username = input("Usuario administrador de RDS: ").strip()
     password = getpass.getpass("Contraseña de RDS (entrada oculta): ")
     folder = root / "respaldos_rds"
     folder.mkdir(exist_ok=True)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S-%f")
-    temporary = folder / f"{DB_NAME}_{stamp}.sql.incompleto"
+    temporary = folder / f"{schema}_{stamp}.sql.incompleto"
     destination = temporary.with_suffix("")
     child_environment = os.environ.copy()
     child_environment["MYSQL_PWD"] = password
@@ -49,7 +55,7 @@ def main():
         "--user", username, "--single-transaction", "--quick",
         "--routines", "--triggers", "--events", "--hex-blob",
         "--no-tablespaces", "--set-gtid-purged=OFF",
-        "--default-character-set=utf8mb4", DB_NAME,
+        "--default-character-set=utf8mb4", schema,
     ]
     try:
         with temporary.open("xb") as output:
@@ -71,7 +77,7 @@ def main():
             digest.update(chunk)
     manifest = {
         "archivo": destination.name,
-        "esquema": DB_NAME,
+        "esquema": schema,
         "generado_utc": datetime.now(timezone.utc).isoformat(),
         "bytes": destination.stat().st_size,
         "sha256": digest.hexdigest(),

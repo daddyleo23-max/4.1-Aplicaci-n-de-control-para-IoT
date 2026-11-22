@@ -141,8 +141,10 @@ def main():
     migrations["016_soporte_operativo.up.sql"] = ("016", TABLES_011 | {"permisos_soporte", "sesiones_control"})
     migrations["017_listas_soporte_web.up.sql"] = ("017", TABLES_011 | {"permisos_soporte", "sesiones_control"})
     migrations["018_capacidades_modelo.up.sql"] = ("018", TABLES_011 | {"permisos_soporte", "sesiones_control"})
+    for filename, number in (("019_control_empresa.up.sql", "019"), ("020_catalogo_resumen.up.sql", "020")):
+        migrations[filename] = (number, TABLES_011 | {"permisos_soporte", "sesiones_control", "capacidades_modelo"})
     if sql.name not in migrations:
-        raise SystemExit("Este ejecutor admite las migraciones 001 a 018.")
+        raise SystemExit("Este ejecutor admite las migraciones 001 a 020.")
     version, expected_tables = migrations[sql.name]
     root = Path.cwd()
     sys.path.insert(0, str(root))
@@ -178,10 +180,10 @@ def main():
                 ]
                 if [row["version"] for row in cursor.fetchall()] != expected_versions:
                     raise SystemExit("La copia no tiene las migraciones previas esperadas.")
-            if version == "016":
+            if version in {"016", "019", "020"}:
                 cursor.execute("SELECT COUNT(*) AS n FROM reservas_control")
                 if cursor.fetchone()["n"]:
-                    raise SystemExit("Cierra todas las reservas desde la aplicación antes de aplicar 016.")
+                    raise SystemExit("Cierra todas las reservas desde la aplicación antes de aplicar esta migración.")
             if version == "018":
                 checks = [
                     "SELECT 1 FROM comandos c JOIN vehiculos v ON v.id_vehiculo=c.id_vehiculo WHERE v.id_modelo IS NULL LIMIT 1",

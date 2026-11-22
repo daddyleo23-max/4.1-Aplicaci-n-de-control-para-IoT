@@ -24,13 +24,14 @@ class CatalogTests(unittest.TestCase):
     def test_anonymous_read_uses_only_public_response_fields(self):
         row = {"id_modelo": 3, "nombre": "Montacargas", "descripcion": "RC",
                "unidades_exhibicion": 1, "correo": "private@example.invalid", "id_propietario": 5}
-        with patch.object(catalogo.service, "ejecutar_consulta", return_value=[row]) as query:
+        with patch.object(catalogo.service, "ejecutar_consulta", side_effect=[[row], [{"nombre":"DETENER","descripcion":"Parada","codigo":13,"id_propietario":5}]]) as query:
             response = self.client.get("/catalogo?limite=10&offset=20")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(set(response.json()["modelos"][0]), {
-            "id_modelo", "nombre", "descripcion", "unidades_exhibicion",
+            "id_modelo", "nombre", "descripcion", "unidades_exhibicion", "capacidades",
         })
-        query.assert_called_once_with("sp_catalogo_modelos", (10, 20))
+        self.assertEqual(query.call_args_list[0].args, ("sp_catalogo_modelos", (10, 20)))
+        self.assertEqual(response.json()["modelos"][0]["capacidades"], [{"nombre":"DETENER","descripcion":"Parada","codigo":13}])
 
     def test_empty_catalog_is_not_a_connection_error(self):
         with patch.object(catalogo.service, "ejecutar_consulta", return_value=[]):

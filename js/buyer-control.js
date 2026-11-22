@@ -13,7 +13,7 @@ let pending = false;
 let heartbeat;
 
 function eligible() {
-  return config.sessionAuth && (currentUser()?.rol === 'USUARIO' || selectedSupportScope() === 'OPERATIVO') && hasSelectedVehicle();
+  return config.sessionAuth && (currentUser()?.rol === 'USUARIO' || (currentUser()?.rol === 'ADMINISTRADOR' && selectedSupportScope() !== 'MONITOREO')) && hasSelectedVehicle();
 }
 function render(message) {
   panel.hidden = !eligible();

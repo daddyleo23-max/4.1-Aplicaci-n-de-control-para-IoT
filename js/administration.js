@@ -1,6 +1,6 @@
 import { config, selectVehicle } from './config.js';
 import { request } from './api-client.js';
-import { currentUser, setAccountSession } from './account-session.js';
+import { currentUser, currentToken, setAccountSession } from './account-session.js';
 import { reserveGuestTrial } from './guest-control.js';
 
 const $ = (selector) => document.querySelector(selector);
@@ -37,6 +37,19 @@ async function fetchData(path, options) {
   return (await request(path, options)).data;
 }
 
+// Follow the API's pagination for both tables and complete model/customer selectors.
+async function fetchCollection(path, key) {
+  const token = currentToken();
+  const rows = [];
+  for (let offset = 0; ; offset += 100) {
+    if (token !== currentToken()) throw new Error('La sesión cambió; vuelve a abrir la lista.');
+    const data = await fetchData(path + '?limite=100&offset=' + offset);
+    if (token !== currentToken()) throw new Error('La sesión cambió; vuelve a abrir la lista.');
+    rows.push(...data[key]);
+    if (data[key].length < 100) return { [key]: rows };
+  }
+}
+
 function panel(title) {
   const result = node('section', undefined, 'panel account-panel');
   result.append(node('h3', title));
@@ -58,20 +71,41 @@ function table(container, columns, records, actions) {
   head.append(labels);
   result.append(head);
   const body = node('tbody');
-  for (const record of records) {
-    const row = node('tr');
-    for (const [key] of columns) row.append(node('td', record[key] ?? '—'));
-    if (actions) {
-      const cell = node('td', undefined, 'account-actions');
-      actions(record, cell);
-      row.append(cell);
-    }
-    body.append(row);
-  }
   result.append(body);
+  const searchLabel = node('label', 'Buscar en esta lista');
+  const search = node('input');
+  search.type = 'search';
+  searchLabel.append(search);
+  const navigation = node('div', undefined, 'account-actions');
+  const count = node('span');
+  count.setAttribute('role', 'status');
+  let page = 0;
+  const previous = button('Anterior', () => { page--; renderRows(); });
+  const next = button('Siguiente', () => { page++; renderRows(); });
+  function renderRows() {
+    const term = search.value.trim().toLocaleLowerCase('es');
+    const filtered = records.filter(record => columns.some(([key]) => String(record[key] ?? '').toLocaleLowerCase('es').includes(term)));
+    page = Math.max(0, Math.min(page, Math.ceil(filtered.length / 20) - 1));
+    body.replaceChildren();
+    for (const record of filtered.slice(page * 20, (page + 1) * 20)) {
+      const row = node('tr');
+      for (const [key] of columns) row.append(node('td', record[key] ?? '—'));
+      if (actions) {
+        const cell = node('td', undefined, 'account-actions');
+        actions(record, cell);
+        row.append(cell);
+      }
+      body.append(row);
+    }
+    previous.disabled = page === 0;
+    next.disabled = (page + 1) * 20 >= filtered.length;
+    count.textContent = filtered.length ? `${page * 20 + 1}–${Math.min((page + 1) * 20, filtered.length)} de ${filtered.length}` : 'Sin registros disponibles.';
+  }
+  search.addEventListener('input', () => { page = 0; renderRows(); });
+  navigation.append(previous, count, next);
   wrap.append(result);
-  container.append(wrap);
-  if (!records.length) container.append(node('p', 'Sin registros disponibles.'));
+  container.append(searchLabel, wrap, navigation);
+  renderRows();
 }
 
 function form(container, fields, submitText, save) {
@@ -136,6 +170,7 @@ async function showSummary() {
     modelos_activos: 'Modelos activos', unidades_activas: 'Unidades activas',
     clientes_activos: 'Compradores activos', unidades_asignadas: 'Unidades asignadas',
     unidades_exhibicion: 'Unidades de exhibición',
+    unidades_prueba_libres: 'Disponibles para prueba', demos_empresa_activas: 'Demos de empresa activas',
   };
   for (const [key, label] of Object.entries(labels)) {
     const card = node('div');
@@ -143,11 +178,20 @@ async function showSummary() {
     metrics.append(card);
   }
   section.append(metrics);
+  section.append(node('p', data.pruebas_habilitadas ? 'Pruebas habilitadas; disponibilidad consultada al cargar. Cada reserva se valida de nuevo.' : 'Pruebas temporales no disponibles mientras se recupera el servicio.'));
+  const actions = node('div', undefined, 'account-actions');
+  for (const [label, action] of [['Modelos', showModels], ['Unidades', showUnits], ['Compradores', showClients], ['Demos de empresa', showCompanyDemos]]) actions.append(button(label, action));
+  section.append(actions);
+  const units = await fetchCollection('/admin/unidades', 'unidades');
+  if (version !== screenVersion) return;
+  section.append(node('h4', 'Inventario resumido'));
+  table(section, [['identificador_unidad', 'Identificador'], ['nombre', 'Unidad'], ['nombre_modelo', 'Modelo'], ['estado_comercial', 'Estado']], units.unidades);
+
 }
 
 async function showModels() {
   const version = beginScreen();
-  const data = await fetchData('/admin/modelos?limite=100');
+  const data = await fetchCollection('/admin/modelos', 'modelos');
   if (version !== screenVersion) return;
   const section = panel('Modelos');
   const editor = node('div');
@@ -241,7 +285,7 @@ async function showUnitCommands(unit) {
 
 async function showClients() {
   const version = beginScreen();
-  const data = await fetchData('/admin/clientes?limite=100');
+  const data = await fetchCollection('/admin/clientes', 'clientes');
   if (version !== screenVersion) return;
   const section = panel('Compradores');
   const editor = node('div');
@@ -268,8 +312,8 @@ async function showClients() {
 async function showUnits() {
   const version = beginScreen();
   const [units, models, clients] = await Promise.all([
-    fetchData('/admin/unidades?limite=100'), fetchData('/admin/modelos?limite=100'),
-    fetchData('/admin/clientes?limite=100'),
+    fetchCollection('/admin/unidades', 'unidades'), fetchCollection('/admin/modelos', 'modelos'),
+    fetchCollection('/admin/clientes', 'clientes'),
   ]);
   if (version !== screenVersion) return;
   const section = panel('Unidades');
@@ -295,11 +339,6 @@ async function showUnits() {
     editor.append(button('Cancelar edición', () => editor.replaceChildren()));
   };
   section.append(button('Nueva unidad', () => editUnit()), editor);
-  const searchLabel = node('label', 'Buscar en las unidades cargadas');
-  const search = node('input');
-  search.type = 'search';
-  searchLabel.append(search);
-  section.append(searchLabel);
   table(section, [['id_vehiculo', 'ID'], ['nombre', 'Unidad'], ['identificador_unidad', 'Identificador'],
     ['nombre_modelo', 'Modelo'], ['estado_comercial', 'Estado'], ['propietario', 'Propietario']],
   units.unidades, (unit, cell) => {
@@ -325,17 +364,12 @@ async function showUnits() {
         await showUnits();
       }));
   });
-  search.addEventListener('input', () => {
-    const term = search.value.trim().toLocaleLowerCase('es');
-    for (const row of section.querySelectorAll('tbody tr')) {
-      row.hidden = !row.textContent.toLocaleLowerCase('es').includes(term);
-    }
-  });
+
 }
 
 async function showAudit() {
   const version = beginScreen();
-  const data = await fetchData('/admin/auditoria?limite=100');
+  const data = await fetchCollection('/admin/auditoria', 'eventos');
   if (version !== screenVersion) return;
   table(panel('Auditoría'), [['fecha_utc', 'Fecha UTC'], ['id_actor', 'Actor'], ['accion', 'Acción'],
     ['tipo_recurso', 'Recurso'], ['id_recurso', 'ID'], ['resultado', 'Resultado']], data.eventos);
@@ -411,7 +445,7 @@ async function showAuthorizedSupport() {
 
 async function showCompanyDemos() {
   const version = beginScreen();
-  const data = await fetchData('/admin/unidades?limite=100');
+  const data = await fetchCollection('/admin/unidades', 'unidades');
   if (version !== screenVersion) return;
   const section = panel('Demos de empresa');
   section.append(node('p', 'Prepara las secuencias de fábrica en unidades activas sin comprador. Al asignarlas, el comprador podrá consultarlas y ejecutarlas; sus demos privadas se mantienen separadas.'));
@@ -578,6 +612,16 @@ async function showPublicCatalog(offset = 0) {
   if (version !== catalogVersion) return;
   host.replaceChildren(node('h3', 'Prueba nuestros vehículos IoT'));
   host.append(node('p', 'Consulta las unidades configuradas para una prueba temporal y exclusiva.'));
+  for (const model of data.modelos) {
+    const card = node('article', undefined, 'catalog-model');
+    const image = node('img');
+    image.src = './assets/modelo-iot.svg';
+    image.alt = 'Ilustración genérica de vehículo IoT; no es una fotografía del modelo.';
+    image.width = 160; image.height = 96; image.loading = 'lazy';
+    card.append(image, node('h4', model.nombre), node('p', model.descripcion),
+      node('p', 'Capacidades habilitadas del modelo: ' + (model.capacidades.map(c => c.nombre).join(', ') || 'Sin capacidades publicadas.')));
+    host.append(card);
+  }
   table(host, [['nombre', 'Modelo'], ['descripcion', 'Descripción'], ['unidades_exhibicion', 'Unidades de exhibición']], data.modelos,
     (model, cell) => cell.append(button('Ver pruebas disponibles', () => showGuestUnits(model))));
   const navigation = node('div', undefined, 'account-actions');
@@ -619,6 +663,7 @@ function showIdentity() {
   $('#account-logout').hidden = !user;
   $('#account-user').textContent = user ? user.nombre + ' · ' + user.rol : 'Inicia sesión para administrar tus vehículos.';
   $('#account-title').textContent = user?.rol === 'ADMINISTRADOR' ? 'Administración' : 'Mi cuenta';
+  $('#tab-admin').textContent = user?.rol === 'ADMINISTRADOR' ? 'ADMINISTRACIÓN' : 'MI CUENTA';
   const menu = $('#account-menu');
   menu.replaceChildren();
   if (!user) return;

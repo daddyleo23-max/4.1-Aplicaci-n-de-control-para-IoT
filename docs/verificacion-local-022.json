@@ -1,0 +1,45 @@
+{
+  "entrega": "022",
+  "fecha": "2026-11-22",
+  "base_local": "MariaDB 12.3.2 reconstruida; no MySQL RDS",
+  "unitarias": 125,
+  "suites_http_ws": [
+    {
+      "informe_privado": "cierre_4_3_e4ce43981b98.json",
+      "comprobaciones": 44,
+      "correctas": true
+    },
+    {
+      "informe_privado": "demos_empresa_308a52c00701.json",
+      "comprobaciones": 60,
+      "correctas": true
+    },
+    {
+      "informe_privado": "capacidades_http_b06cd68bd848.json",
+      "comprobaciones": 47,
+      "correctas": true
+    },
+    {
+      "informe_privado": "control_http_1b08074bd16d.json",
+      "comprobaciones": 45,
+      "correctas": true
+    },
+    {
+      "informe_privado": "soporte_operativo_1158ebe5a7fb.json",
+      "comprobaciones": 49,
+      "correctas": true
+    },
+    {
+      "informe_privado": "http_invitados_27866e21c34e.json",
+      "comprobaciones": 44,
+      "correctas": true
+    }
+  ],
+  "total_http_ws": 289,
+  "sql_nuevas_empresa": 18,
+  "sql_regresion_comprador_invitado": "Correcta con ROLLBACK",
+  "rds_windows_019_020": "Pendiente",
+  "publicacion_https_wss": "Pendiente",
+  "telefono_fisico": "Pendiente",
+  "rondas_companeros": "Pendiente"
+}

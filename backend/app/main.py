@@ -53,8 +53,8 @@ async def lifespan(application):
 app = FastAPI(
     lifespan=lifespan,
     title="API para Vehículo IoT",
-    description="API REST y WebSocket para controlar un vehículo IoT.",
-    version="1.0.0",
+    description="CONTROL, MONITOREO y ADMINISTRACIÓN 4.3. Autorización por sesión y unidad; canales de monitoreo y control exclusivo separados. Los eventos no confirman ejecución física.",
+    version="4.3.0",
 )
 
 app.add_middleware(

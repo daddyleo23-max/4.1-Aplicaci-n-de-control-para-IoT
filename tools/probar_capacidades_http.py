@@ -3,6 +3,7 @@ import getpass
 import json
 from pathlib import Path
 import secrets
+from websockets.sync.client import connect
 from probar_admin_http import BASE, request
 
 
@@ -13,7 +14,7 @@ def main():
     code,login=request('POST','/auth/login',{'correo':mail,'password':password});password=None
     if code!=200 or login.get('usuario',{}).get('rol')!='ADMINISTRADOR':raise SystemExit('Login rechazado.')
     token=login['access_token'];suffix=secrets.token_hex(6);name='Capacidades HTTP '+suffix
-    model=other=unit=buyer=None;results=[];cleanup=[]
+    model=other=unit=buyer=None;results=[];cleanup=[];lease=None;socket=None
     report={'destino':BASE,'resultados':results,'sin_hardware':True}
     def check(label,expected,method,path,body=None,auth=token):
         code,data=request(method,path,body,auth)
@@ -24,6 +25,18 @@ def main():
     def record(label,okay):
         results.append({'prueba':label,'correcto':bool(okay)});print(label+(': CORRECTO' if okay else ': INCORRECTO'))
         if not okay:raise RuntimeError(label)
+    def acquire():
+        nonlocal lease,socket
+        lease=check('Empresa reserva unidad',201,'POST',f'/vehiculos/{unit}/control/reservar')['id_control']
+        socket=connect(BASE.replace('http','ws',1)+f'/ws/control/{lease}',open_timeout=10,close_timeout=3)
+        socket.__enter__()
+        socket.send(json.dumps({'tipo':'autenticar','token':token}))
+        record('Canal de empresa autorizado',json.loads(socket.recv(timeout=10))['tipo']=='control_autorizado')
+    def release():
+        nonlocal lease,socket
+        if lease:check('Liberar empresa',200,'POST',f'/control/{lease}/cerrar')
+        if socket:socket.__exit__(None,None,None)
+        lease=socket=None
     try:
         model=check('Modelo privado',201,'POST','/admin/modelos',{'nombre':name})['id_modelo']
         other=check('Modelo ajeno',201,'POST','/admin/modelos',{'nombre':name+' B'})['id_modelo']
@@ -51,17 +64,24 @@ def main():
         demo=check('Guardar demo compatible',201,'POST','/mis-demos',doc)['id_demo']
         check('Desactivar comando',200,'POST',edit,{'id_capacidad':forward,'activo':False})
         check('Desactivar capacidad',200,'POST',capedit,{'nombre':'ADELANTE','codigo':1,'activo':False})
-        check('Movimiento deshabilitado rechazado',403,'POST',f'/vehiculos/{unit}/movimientos',{'id_comando':forward_id})
+        acquire()
+        check('Movimiento deshabilitado rechazado',404,'POST',f'/vehiculos/{unit}/movimientos',{'id_comando':forward_id})
         check('Demo incompatible rechazada antes de iniciar',409,'POST',f'/vehiculos/{unit}/demos/{demo}/iniciar')
         check('Editor rechaza función inactiva',409,'POST','/mis-demos',{**doc,'nombre':'Rechazada '+suffix})
+        release()
         check('Activación sin capacidad rechazada',409,'POST',edit,{'id_capacidad':forward})
         check('Ruta anterior respeta capacidad inactiva',409,'POST',f'/comandos/{forward_id}/actualizar',{'nombre':'ADELANTE','codigo':1,'activo':True})
         check('Reactivar capacidad',200,'POST',capedit,{'nombre':'ADELANTE','codigo':1})
         check('Reactivar comando',200,'POST',edit,{'id_capacidad':forward,'descripcion':'Verificado'})
+        acquire()
         check('Movimiento compatible aceptado',201,'POST',f'/vehiculos/{unit}/movimientos',{'id_comando':forward_id})
         check('DETENER aceptado',201,'POST',f'/vehiculos/{unit}/movimientos',{'id_comando':stop_id})
         check('Demo compatible inicia',202,'POST',f'/vehiculos/{unit}/demos/{demo}/iniciar')
-        # No hay pausas de temporización: el resto de consultas permite completar la demo breve.
+        while True:
+            event=json.loads(socket.recv(timeout=10))
+            if event.get('tipo')=='demo_error':raise RuntimeError('Falló la demo compatible.')
+            if event.get('tipo')=='demo_fin':break
+        release()
         buyer_mail='cap-'+suffix+'@example.invalid';secret=secrets.token_urlsafe(24)
         buyer=check('Comprador de prueba',201,'POST','/admin/clientes',{'nombre':name,'correo':buyer_mail,'password':secret})['id_usuario']
         buyer_token=check('Login comprador',200,'POST','/auth/login',{'correo':buyer_mail,'password':secret},None)['access_token']
@@ -74,6 +94,9 @@ def main():
         audit=check('Auditoría',200,'GET','/admin/auditoria?limite=100')['eventos']
         record('Cambios auditados',{'GUARDAR_CAPACIDAD','GUARDAR_COMANDO_UNIDAD'}<={r['accion'] for r in audit})
     finally:
+        if lease:
+            try:release()
+            except Exception:pass
         operations=[]
         if unit:operations.append((f'/admin/unidades/{unit}/actualizar',{**body,'activo':False}))
         if model:operations.append((f'/admin/modelos/{model}/actualizar',{'nombre':name,'activo':False}))

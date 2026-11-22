@@ -43,19 +43,15 @@ class DemoCompletion(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(okay)
         self.assertEqual(publish.call_args.args[1]['tipo'],'demo_error')
 
-    async def test_admin_stop_cancels_demo_before_manual_write(self):
-        import asyncio
+    async def test_admin_movement_uses_exclusive_control_service(self):
         from types import SimpleNamespace
         from app.routers import movimientos
         from app.models import MovimientoRequest
-        from app.services.demo_service import demo_service
-        ended=[];started=asyncio.Event()
-        async def demo():
-            try:started.set();await asyncio.Event().wait()
-            finally:ended.append('demo')
-        task=asyncio.create_task(demo());await started.wait()
-        async def manual(unit,command):self.assertEqual(ended,['demo']);return {'ok':True}
-        request=SimpleNamespace(state=SimpleNamespace(session={'rol':'ADMINISTRADOR'}))
-        with patch('app.resource_security.sessions_enabled',return_value=True),patch.object(demo_service,'bloqueo',asyncio.Lock()),patch.object(demo_service,'tareas',{1:task}),patch.object(movimientos.servicio,'ejecutar_consulta',return_value=[{'id_comando':13,'nombre':'DETENER','activo':1}]),patch.object(movimientos,'_registrar_movimiento',side_effect=manual):
+        from app.services.control_service import control_service
+        session={'rol':'ADMINISTRADOR','id_sesion':5,'id_usuario':1}
+        request=SimpleNamespace(state=SimpleNamespace(session=session))
+        with patch('app.resource_security.sessions_enabled',return_value=True), patch.object(control_service,'move',AsyncMock(return_value={'ok':True})) as move, patch.object(movimientos,'_registrar_movimiento',AsyncMock()) as bypass:
             result=await movimientos.registrar_movimiento(1,MovimientoRequest(id_comando=13),request)
         self.assertEqual(result,{'ok':True})
+        move.assert_awaited_once_with(session,1,13)
+        bypass.assert_not_awaited()
