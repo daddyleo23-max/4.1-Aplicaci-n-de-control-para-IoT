@@ -693,3 +693,43 @@ ejecutor actualizado, backend completo sin secretos y prueba HTTP. Sólo
 sobre copia con 001–012 verificadas. La preparación anterior de Invitado
 permanece intacta. Reversión conservadora: revocar consentimiento y volver
 al backend previo manteniendo tabla y auditoría; no eliminar registros.
+
+## Validación real de soporte de diagnóstico
+
+El usuario completó probar_soporte_http.py en Windows/RDS: ambos login 200,
+admin sin consentimiento y autoautorización 403, concesión 201, consultas
+estado/historial/comandos 200, movimientos 403, WSS autorizado, revocación
+200, WSS cerrado y REST posterior 403. Informe soporte_http_75fe63db19eb.json.
+La migración 013 había terminado con MySQL 0 y conservación=True. El 404
+anterior se debió a que soporte.py no estaba copiado al backend ejecutado;
+se verificó Test-Path=False y se resolvió copiando el contenido correcto.
+
+## Base SQL de exclusividad del comprador (014, entrega 015)
+
+Se amplía reservas_control sin duplicar el bloqueo de unidad. Su PK de
+vehículo sigue siendo el árbitro compartido; ahora tiene exactamente un
+id_sesion_invitado o un id_control mediante CHECK y FK. sesiones_control
+conserva historial por sesión de cuenta y asignación; cada adquisición tiene
+ID distinto para evitar que un cierre atrasado afecte a la siguiente.
+La adquisición bloquea la fila de vehículo, comprueba sesión/propiedad/rol,
+actividad y DETENER activo; sólo el titular puede exigir o renovar. La
+vigencia es 45 s renovables sin superar la sesión de cuenta. Vencer no
+libera automáticamente: cierre marca DETENIENDO y el servicio posterior
+procesará DETENER antes de liberar. Fallar la parada deberá conservar el
+bloqueo. Logout/caducidad/actividad se vuelven a comprobar y se exponen al
+servicio como cierre pendiente. Adquisición, cierre y liberación auditados.
+
+SQL aplicado localmente a MariaDB desechable (collation normalizada). Pasaron
+54 comprobaciones: exclusión entre sesiones, autorización, renovación,
+caducidad sin liberación prematura, cierre, protección frente a cierres
+antiguos, revocación de cuenta, historial y las 30 pruebas previas de Invitado.
+Fixtures transaccionales revertidas; no es prueba de hardware ni del motor
+RDS 8.4. Falta aplicar/verificar en RDS. No requiere triggers nuevos.
+
+Esta entrega es sólo base SQL: todavía no se adquieren reservas desde el
+frontend/REST ni hay heartbeat/cierre WSS del comprador. La exclusividad
+operativa no se anuncia como completa hasta integrar y verificar el servicio.
+El esquema ampliado acepta las inserciones Invitado previas sin cambios.
+El ejecutor admite 014 sólo con el conjunto de tablas y versiones 001–013
+esperados. Ante fallo DDL parcial revisar informe, no repetir a ciegas.
+Conservar tabla e historial para reversión conservadora; no DROP automático.
