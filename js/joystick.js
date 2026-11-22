@@ -8,8 +8,12 @@ const aliases = {
 };
 const normalize = (text = '') => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
 const enabled = (command) => command && command.activo !== false && command.activo !== 0;
+let joystickBindings = new AbortController();
 
 export function bindJoystick(commands, sendCommand, sendStop) {
+  joystickBindings.abort();
+  joystickBindings = new AbortController();
+  const on = (target, type, handler) => target.addEventListener(type, handler, { signal: joystickBindings.signal });
   const activeAxes = new Map();
   const findCommand = (direction) => commands.find((command) =>
     aliases[direction].some((name) => normalize(command.nombre || '').includes(normalize(name))) && enabled(command));
@@ -75,20 +79,20 @@ export function bindJoystick(commands, sendCommand, sendStop) {
       try { stick.releasePointerCapture(oldPointer); } catch { /* El puntero ya salió del control. */ }
     };
 
-    stick.addEventListener('pointerdown', (event) => {
+    on(stick, 'pointerdown', (event) => {
       if (event.button !== undefined && event.button !== 0) return;
       event.preventDefault();
       pointerId = event.pointerId;
       try { stick.setPointerCapture(pointerId); } catch { /* El navegador puede no permitir captura. */ }
       apply(stick, directionAt(event));
     });
-    stick.addEventListener('pointermove', (event) => {
+    on(stick, 'pointermove', (event) => {
       if (event.pointerId === pointerId) apply(stick, directionAt(event));
     });
-    stick.addEventListener('pointerup', releasePointer);
-    stick.addEventListener('pointercancel', releasePointer);
-    stick.addEventListener('lostpointercapture', releasePointer);
-    stick.addEventListener('keydown', (event) => {
+    on(stick, 'pointerup', releasePointer);
+    on(stick, 'pointercancel', releasePointer);
+    on(stick, 'lostpointercapture', releasePointer);
+    on(stick, 'keydown', (event) => {
       const direction = keyDirection(event.key);
       if (direction) {
         event.preventDefault();
@@ -100,19 +104,19 @@ export function bindJoystick(commands, sendCommand, sendStop) {
         apply(stick, null);
       }
     });
-    stick.addEventListener('keyup', (event) => {
+    on(stick, 'keyup', (event) => {
       if (heldKey === event.key) {
         heldKey = null;
         apply(stick, null);
       }
     });
-    stick.addEventListener('blur', () => {
+    on(stick, 'blur', () => {
       if (heldKey) { heldKey = null; apply(stick, null); }
       if (pointerId !== null) releasePointer();
     });
   }
 
-  window.addEventListener('blur', () => {
+  on(window, 'blur', () => {
     const hadActive = activeAxes.size > 0;
     activeAxes.clear();
     for (const stick of elements.sticks) {

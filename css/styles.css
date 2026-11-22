@@ -385,9 +385,48 @@ body.control-expanded{overflow:hidden}
   .status-led{position:static;grid-column:2;grid-row:1/3;align-self:center;margin:0;width:6px;height:6px;transform:none}
 }
 
+/* Administración conserva la paleta y se adapta sin reducir las tablas. */
+.account-view [hidden]{display:none!important}
+.account-return{display:none}
+.account-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:20px 0}
+.account-heading h2{margin:0 0 8px;font-size:clamp(24px,3vw,34px)}
+.account-heading p{margin:0;color:var(--muted,#94a2a7)}
+#account-message:empty{display:none}
+#account-message{padding:14px;border:1px solid #dcae37;border-radius:12px;color:#ffd36b}
+.account-login{display:grid;gap:18px;max-width:480px;margin:28px auto;padding:28px}
+.account-view label{display:grid;gap:8px;font-size:14px;min-width:0}
+.account-view input,.account-view select{width:100%;min-height:44px;padding:10px 12px;border:1px solid #56605a;border-radius:9px;background:#171c1b;color:#f4f4ee;font:inherit;box-sizing:border-box}
+.account-view button{min-height:42px;padding:10px 16px;border:1px solid #9c7b2d;border-radius:10px;background:#302b1d;color:#ffcf5c;font:inherit;cursor:pointer}
+.account-view button:hover{background:#443a21}
+.account-view button:disabled{opacity:.5;cursor:wait}
+.account-view button:focus-visible,.account-view input:focus-visible,.account-view select:focus-visible{outline:2px solid #f7c13d;outline-offset:3px}
+.account-login button[type=submit],.account-form>button[type=submit]{background:#edb83d;color:#181b18;font-weight:700}
+.account-menu{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px}
+.account-panel{padding:clamp(16px,3vw,28px);min-width:0}
+.account-panel h3{font-size:22px;margin:0 0 20px}
+.account-table-wrap{overflow-x:auto;margin-top:20px}
+.account-table{border-collapse:collapse;width:100%;font-size:14px;text-align:left}
+.account-table th,.account-table td{padding:14px 12px;border-bottom:1px solid #38403d;vertical-align:top}
+.account-table th{color:#aab5b8;font-weight:500}
+.account-table td{overflow-wrap:anywhere;min-width:90px}
+.account-actions{display:flex;gap:8px;flex-wrap:wrap}
+.account-actions button{white-space:nowrap}
+.account-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;margin:20px 0;padding:20px;border:1px solid #414b43;border-radius:12px;align-items:end}
+.account-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px}
+.account-metrics>div{display:grid;gap:10px;padding:22px;border-radius:12px;background:#252b26;border:1px solid #414b43}
+.account-metrics strong{font-size:30px;color:#f3be3f}
+.account-metrics span{font-size:14px;color:#bec6c2}
+.demo-editor-rows{grid-column:1/-1;display:grid;gap:12px;counter-reset:steps}
+.demo-editor-row{display:grid;grid-template-columns:minmax(160px,2fr) repeat(2,minmax(100px,1fr)) repeat(3,auto);align-items:end;gap:10px;padding:14px;border-radius:12px;background:#252b26;counter-increment:steps}
+.demo-editor-row::before{content:'Paso ' counter(steps);grid-column:1/-1;color:#f3be3f;font-size:14px}
+.account-form>.demo-editor-rows+p{grid-column:1/-1;margin:0;font-size:14px}
+@media(max-width:1100px){.demo-editor-row{grid-template-columns:repeat(3,minmax(0,1fr))}.demo-editor-row>select{grid-column:1/-1}}
+@media(max-width:600px){.account-heading{align-items:start;flex-direction:column}.account-form{grid-template-columns:1fr;padding:14px}.account-menu{gap:8px}.account-menu button{flex:1}.demo-editor-row{grid-template-columns:repeat(2,minmax(0,1fr))}.demo-editor-row>button:last-child{grid-column:1/-1}}
+
 /* En móvil horizontal se usa un modo de operación: el mando es el foco visual. */
 @media(max-width:1000px) and (orientation:landscape){
-  .topbar,.intro-row,.status-grid,.view-nav,.activity-line,.footer{display:none}
+  .account-return:not([hidden]){display:block;position:fixed;left:8px;top:8px;z-index:8;padding:8px 12px;border:1px solid #9c7b2d;border-radius:20px;background:#20231f;color:#ffcf5c;font:inherit;font-size:14px}
+  body:has(#view-control:not([hidden])) :is(.topbar,.intro-row,.status-grid,.view-nav,.activity-line,.footer){display:none}
   .page-wrap{min-height:100svh;padding:clamp(4px,1.5svh,12px) clamp(6px,2vw,18px)}
   .control-layout{display:block}
   .commands-panel{padding:0;border:0;background:transparent}

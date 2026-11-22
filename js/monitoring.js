@@ -1,4 +1,5 @@
-import { config } from './config.js';
+import { config, hasSelectedVehicle } from './config.js';
+import { currentToken } from './account-session.js';
 import { api } from './api-client.js';
 
 const $ = (selector) => document.querySelector(selector);
@@ -164,24 +165,30 @@ async function syncHistory() {
 
 export async function syncMonitoring() {
   if (!active) return;
+  if (config.sessionAuth && (!currentToken() || !hasSelectedVehicle())) return;
   await Promise.allSettled([syncState(), syncHistory()]);
 }
 
 function setView(name, updateUrl = true) {
   const monitor = name === 'monitor';
+  const admin = name === 'admin';
   active = monitor;
-  $('#view-control').hidden = monitor;
+  $('#view-control').hidden = monitor || admin;
   view.hidden = !monitor;
-  $('#tab-control').classList.toggle('is-active', !monitor);
+  $('#view-admin').hidden = !admin;
+  $('#tab-admin').classList.toggle('is-active', admin);
+  $('#tab-admin').setAttribute('aria-pressed', String(admin));
+  $('#tab-control').classList.toggle('is-active', !monitor && !admin);
   $('#tab-monitor').classList.toggle('is-active', monitor);
-  $('#tab-control').setAttribute('aria-pressed', String(!monitor));
+  $('#tab-control').setAttribute('aria-pressed', String(!monitor && !admin));
   $('#tab-monitor').setAttribute('aria-pressed', String(monitor));
-  if (updateUrl) history.replaceState(null, '', monitor ? '#monitoreo' : '#control');
+  if (updateUrl) history.replaceState(null, '', admin ? '#cuenta' : monitor ? '#monitoreo' : '#control');
   if (monitor) syncMonitoring();
 }
 
 $('#tab-control').addEventListener('click', () => setView('control'));
 $('#tab-monitor').addEventListener('click', () => setView('monitor'));
+$('#tab-admin').addEventListener('click', () => setView('admin'));
 $('#monitor-refresh').addEventListener('click', syncMonitoring);
 
 document.addEventListener('iot:ws-state', (event) => {
@@ -203,11 +210,33 @@ document.addEventListener('iot:ws-message', (event) => {
   if (isIndividual && active) syncHistory();
 });
 
-window.addEventListener('hashchange', () => setView(window.location.hash === '#monitoreo' ? 'monitor' : 'control', false));
+window.addEventListener('hashchange', () => setView(window.location.hash === '#cuenta' ? 'admin' : window.location.hash === '#monitoreo' ? 'monitor' : 'control', false));
 
 document.addEventListener('iot:vehicle-name', (event) => {
   if (event.detail?.name) knownVehicleName = event.detail.name;
 });
 
 // Las vistas se comparten dentro del mismo documento; el hash permite enlazar directamente.
+function resetMonitoring() {
+  stateEpoch++;
+  historyEpoch++;
+  historyRenderVersion++;
+  eventVersion++;
+  currentLatestTimestamp = '';
+  knownVehicleName = 'Vehículo seleccionado';
+  historyRows.replaceChildren();
+  historyWrap.hidden = true;
+  historyMessage.hidden = false;
+  historyMessage.textContent = 'Selecciona una unidad en Mi cuenta para consultar sus movimientos.';
+  historyCount.textContent = 'Sin registros cargados';
+  latestCommand.textContent = 'Selecciona un vehículo';
+  latestVehicle.textContent = '';
+  latestCode.textContent = '';
+  latestTime.textContent = '';
+  latestSource.textContent = 'Los datos se consultarán al seleccionar una unidad autorizada.';
+}
+document.addEventListener('iot:account-session', () => { if (config.sessionAuth) resetMonitoring(); });
+document.addEventListener('iot:select-vehicle', () => { if (config.sessionAuth) resetMonitoring(); });
+
 if (window.location.hash === '#monitoreo') setView('monitor', false);
+if (window.location.hash === '#cuenta') setView('admin', false);

@@ -1,6 +1,7 @@
 """Prueba HTTP del guardado de demos privadas en el backend aislado."""
 
 from datetime import datetime, timezone
+import argparse
 import getpass
 import json
 from pathlib import Path
@@ -10,6 +11,11 @@ from probar_admin_http import request
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--demo", type=int, help="Reanudar la prueba sobre una demo propia existente.")
+    args = parser.parse_args()
+    if args.demo is not None and args.demo <= 0:
+        raise SystemExit("El ID de demo debe ser positivo.")
     tokens = []
     results = []
     report = {"resultados": results}
@@ -44,12 +50,23 @@ def main():
             "descripcion": "Prueba de persistencia del editor",
             "pasos": [{"id_comando": stop["id_comando"], "duracion_ms": 100, "pausa_ms": 0}],
         }
-        created = check("Crear demo privada", 201, "POST", "/mis-demos", payload, owner)
-        demo_id = created["id_demo"]
+        if args.demo is None:
+            created = check("Crear demo privada", 201, "POST", "/mis-demos", payload, owner)
+            demo_id = created["id_demo"]
+        else:
+            demo_id = args.demo
+            existing = check("Recuperar demo para reanudar", 200, "GET",
+                             f"/mis-demos/{demo_id}", token=owner)
+            if not existing["demo"]["nombre"].startswith("Demo privada prueba "):
+                raise RuntimeError("Solo se reanudan demos generadas por esta prueba.")
+            payload["nombre"] = existing["demo"]["nombre"]
+            created = {"revision": existing["demo"]["revision"]}
         report["id_demo_prueba"] = demo_id
         detail = check("Recuperar demo y pasos", 200, "GET", f"/mis-demos/{demo_id}", token=owner)
         if len(detail["pasos"]) != 1 or detail["demo"]["tipo"] != "PRIVADA":
             raise RuntimeError("La demo no conservó tipo y pasos esperados.")
+        if args.demo is None and (detail["pasos"][0]["id_comando"] != stop["id_comando"] or detail["pasos"][0]["orden"] != 1):
+            raise RuntimeError("Se invirtieron el comando y la posición del paso.")
         check("Ocultar demo a otro comprador", 404, "GET", f"/mis-demos/{demo_id}", token=other)
         payload["revision"] = created["revision"]
         payload["pasos"] = [
@@ -71,6 +88,10 @@ def main():
             raise RuntimeError("Una petición rechazada alteró la secuencia.")
         if [step["duracion_ms"] for step in detail["pasos"]] != [200, 100]:
             raise RuntimeError("El orden de los pasos no coincide.")
+        if [step["orden"] for step in detail["pasos"]] != [1, 2] or any(
+            step["id_comando"] != stop["id_comando"] for step in detail["pasos"]
+        ):
+            raise RuntimeError("No se conservaron los comandos y posiciones solicitados.")
         payload["pasos"] = valid_steps
         payload["activo"] = False
         check("Desactivar demo de prueba", 200, "POST",

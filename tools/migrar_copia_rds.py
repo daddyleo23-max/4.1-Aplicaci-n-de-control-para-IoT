@@ -98,9 +98,13 @@ def main():
             "007", BASE_TABLES | {"migraciones_iot", "usuarios", "modelos",
                                  "asignaciones", "sesiones", "auditoria"},
         ),
+        "008_corregir_orden_pasos.up.sql": (
+            "008", BASE_TABLES | {"migraciones_iot", "usuarios", "modelos",
+                                 "asignaciones", "sesiones", "auditoria"},
+        ),
     }
     if sql.name not in migrations:
-        raise SystemExit("Este ejecutor admite las migraciones 001 a 007.")
+        raise SystemExit("Este ejecutor admite las migraciones 001 a 008.")
     version, expected_tables = migrations[sql.name]
     root = Path.cwd()
     sys.path.insert(0, str(root))

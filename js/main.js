@@ -1,4 +1,4 @@
-import { config } from './config.js';
+import { config, clearVehicleSelection } from './config.js';
 import { clearSessionApiKey, initializeLocalAuth, isLocalHost, setSessionApiKey } from './auth-session.js';
 import { api, ApiError } from './api-client.js';
 import { elements, feedback, renderCommands, renderDemos, setDemoStatus, setEvent, setStatus } from './ui.js';
@@ -7,6 +7,7 @@ import { bindJoystick } from './joystick.js';
 import { startHealthPolling } from './connection-status.js';
 import './monitoring.js';
 import { openDemoPanel } from './presentation.js';
+import { currentToken } from './account-session.js';
 
 let commands = [];
 let stopCommand = null;
@@ -19,6 +20,7 @@ const commandById = new Map();
 await initializeLocalAuth();
 
 function configureAuthPanel() {
+  if (config.sessionAuth) return;
   const panel = document.querySelector('#auth-panel');
   if (isLocalHost()) return;
 
@@ -68,7 +70,10 @@ function sendCommand(command, { priority = false } = {}) {
   if (!command || command.activo === false || command.activo === 0) return;
   if (demoRunning && command.nombre?.toUpperCase() !== 'DETENER') { feedback('Cancela la DEMO antes de enviar otro comando.', 'DEMO ACTIVA'); return; }
   const epoch = ++requestEpoch;
+  const accountToken = currentToken();
+  const vehicleId = config.vehicleId;
   const submit = async () => {
+    if (config.sessionAuth && (!accountToken || accountToken !== currentToken() || vehicleId !== config.vehicleId)) return;
     if (epoch === requestEpoch || priority) feedback(`Enviando ${command.nombre}…`, command.nombre);
     try {
       const response = await api.move(command.id_comando);
@@ -110,8 +115,12 @@ function setDemoRunning(active, message) {
   setDemoStatus(message);
 }
 
+let initialLoadEpoch = 0;
+let pendingDemoId = null;
 async function loadInitialData() {
+  const epoch = ++initialLoadEpoch;
   const [vehicleResult, commandResult, demoResult] = await Promise.allSettled([api.vehicle(), api.commands(), api.demos()]);
+  if (epoch !== initialLoadEpoch) return;
   if (vehicleResult.status === 'fulfilled') {
     const vehicle = vehicleResult.value;
     document.querySelector('#vehicle-name').textContent = vehicle.nombre || `Vehículo ${config.vehicleId}`;
@@ -120,6 +129,7 @@ async function loadInitialData() {
   } else feedback(`No se pudo cargar el vehículo: ${vehicleResult.reason.message}`);
   if (commandResult.status === 'fulfilled') {
     commands = commandResult.value.comandos || [];
+    commandById.clear();
     commands.forEach((command) => commandById.set(command.id_comando, command));
     stopCommand = commands.find((item) => item.nombre?.trim().toUpperCase() === 'DETENER' && item.activo !== false && item.activo !== 0) || null;
     renderCommands(commands, {
@@ -139,13 +149,21 @@ async function loadInitialData() {
       onUnavailable: (message) => feedback(message, 'FUNCIÓN PENDIENTE'),
     });
     bindJoystick(commands, sendCommand, stopVehicle);
+    elements.stop.disabled = !stopCommand;
     if (!stopCommand) { elements.stop.disabled = true; elements.stop.title = 'DETENER no está disponible en el catálogo'; }
   } else {
     renderCommands([], { onCommand: () => {}, onDemo: () => {}, onUnavailable: (message) => feedback(message) });
     document.querySelector('#command-count').textContent = 'Catálogo no disponible';
     feedback(`No se pudo cargar el catálogo: ${commandResult.reason.message}`);
   }
-  if (demoResult.status === 'fulfilled') renderDemos(demoResult.value.demos || []);
+  if (demoResult.status === 'fulfilled') {
+    renderDemos(demoResult.value.demos || []);
+    if (pendingDemoId !== null) {
+      elements.demoSelect.value = String(pendingDemoId);
+      elements.demoSelect.dispatchEvent(new Event('change'));
+      pendingDemoId = null;
+    }
+  }
   else { renderDemos([]); setDemoStatus(`No se pudo consultar DEMO: ${demoResult.reason.message}`); }
 }
 
@@ -164,6 +182,44 @@ elements.demoCancel.addEventListener('click', async () => {
 });
 document.addEventListener('iot:demo-state', (event) => setDemoRunning(event.detail.active, event.detail.message));
 
-connectWebSocket();
+let closeSocket = () => {};
+document.addEventListener('iot:choose-demo', event => {
+  pendingDemoId = event.detail.id;
+});
+document.addEventListener('iot:account-session', () => {
+  if (!config.sessionAuth) return;
+  closeSocket();
+  initialLoadEpoch++;
+  clearVehicleSelection();
+  pendingDemoId = null;
+  requestEpoch++;
+  commands = [];
+  stopCommand = null;
+  commandById.clear();
+  elements.stop.disabled = true;
+  renderCommands([], { onCommand: () => {}, onDemo: () => {}, onUnavailable: () => {} });
+  bindJoystick([], () => {}, () => {});
+  renderDemos([]);
+  setDemoRunning(false, 'Selecciona un vehículo en Mi cuenta.');
+  feedback('Selecciona un vehículo en Mi cuenta.', 'EN ESPERA');
+  setStatus('status-ws', 'offline', 'Sin vehículo', 'Selecciona una unidad autorizada.');
+});
+document.addEventListener('iot:select-vehicle', () => {
+  if (!config.sessionAuth || !currentToken()) return;
+  closeSocket();
+  requestEpoch++;
+  commands = [];
+  stopCommand = null;
+  commandById.clear();
+  elements.stop.disabled = true;
+  renderCommands([], { onCommand: () => {}, onDemo: () => {}, onUnavailable: () => {} });
+  bindJoystick([], () => {}, () => {});
+  renderDemos([]);
+  setDemoRunning(false, 'Sin secuencia activa');
+  closeSocket = connectWebSocket();
+  loadInitialData();
+});
+if (!config.sessionAuth) closeSocket = connectWebSocket();
 startHealthPolling();
-loadInitialData();
+if (!config.sessionAuth) loadInitialData();
+else document.dispatchEvent(new CustomEvent('iot:account-session'));

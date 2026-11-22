@@ -1,5 +1,6 @@
 import { config } from './config.js';
 import { setEvent, setStatus } from './ui.js';
+import { currentToken } from './account-session.js';
 
 export function connectWebSocket() {
   let socket;
@@ -11,11 +12,27 @@ export function connectWebSocket() {
     setStatus('status-ws', retry ? 'checking' : 'checking', retry ? 'Reconectando' : 'Conectando', 'Sesión de este navegador');
     try { socket = new WebSocket(config.websocketUrl); }
     catch { scheduleRetry(); return; }
-    socket.addEventListener('open', () => { retry = 0; setStatus('status-ws', 'online', 'En línea', 'Navegador conectado por WSS'); document.dispatchEvent(new CustomEvent('iot:ws-state', { detail: { state: 'online' } })); });
+    socket.addEventListener('open', () => {
+      if (closedByUser) return;
+      retry = 0;
+      if (config.sessionAuth) {
+        socket.send(JSON.stringify({ tipo: 'autenticar', token: currentToken() }));
+        setStatus('status-ws', 'checking', 'Autorizando', 'Validando acceso al vehículo');
+        return;
+      }
+      setStatus('status-ws', 'online', 'En línea', 'Navegador conectado por WSS');
+      document.dispatchEvent(new CustomEvent('iot:ws-state', { detail: { state: 'online' } }));
+    });
     socket.addEventListener('message', (event) => {
+      if (closedByUser) return;
       let payload;
       try { payload = JSON.parse(event.data); } catch { setEvent('Se recibió un mensaje no JSON por WSS.'); return; }
       const type = payload?.tipo || 'evento';
+      if (Number(payload?.id_vehiculo) !== config.vehicleId) return;
+      if (config.sessionAuth && type === 'estado_inicial') {
+        setStatus('status-ws', 'online', 'En línea', 'Sesión autorizada para el vehículo');
+        document.dispatchEvent(new CustomEvent('iot:ws-state', { detail: { state: 'online' } }));
+      }
       const name = payload?.comando ? ` · ${payload.comando}` : '';
       const order = Number.isInteger(payload?.orden) ? ` · paso ${payload.orden}` : '';
       setEvent(`${type}${name}${order}`, payload?.timestamp);
@@ -24,8 +41,14 @@ export function connectWebSocket() {
       if (type === 'demo_inicio') document.dispatchEvent(new CustomEvent('iot:demo-state', { detail: { active: true, message: 'DEMO en ejecución' } }));
       if (['demo_fin','demo_cancelada','demo_error'].includes(type)) document.dispatchEvent(new CustomEvent('iot:demo-state', { detail: { active: false, message: type === 'demo_fin' ? 'DEMO finalizada' : type === 'demo_cancelada' ? 'DEMO cancelada' : 'La DEMO reportó un error' } }));
     });
-    socket.addEventListener('error', () => { setStatus('status-ws', 'offline', 'Desconectado', 'Error en la sesión WSS'); document.dispatchEvent(new CustomEvent('iot:ws-state', { detail: { state: 'offline' } })); });
-    socket.addEventListener('close', () => { setStatus('status-ws', 'offline', 'Desconectado', 'Reintentando conexión WSS'); document.dispatchEvent(new CustomEvent('iot:ws-state', { detail: { state: 'offline' } })); scheduleRetry(); });
+    socket.addEventListener('error', () => { if (closedByUser) return; setStatus('status-ws', 'offline', 'Desconectado', 'Error en la sesión WSS'); document.dispatchEvent(new CustomEvent('iot:ws-state', { detail: { state: 'offline' } })); });
+    socket.addEventListener('close', (event) => {
+      if (closedByUser) return;
+      const denied = config.sessionAuth && event.code === 1008;
+      setStatus('status-ws', 'offline', 'Desconectado', denied ? 'Selecciona de nuevo una unidad autorizada.' : 'Reintentando conexión WSS');
+      document.dispatchEvent(new CustomEvent('iot:ws-state', { detail: { state: 'offline' } }));
+      if (!denied) scheduleRetry();
+    });
   };
   const scheduleRetry = () => {
     if (closedByUser || timer) return;

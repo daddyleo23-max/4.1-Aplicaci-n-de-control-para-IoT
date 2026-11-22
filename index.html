@@ -55,9 +55,11 @@
         <nav class="view-nav" aria-label="Secciones de la aplicación">
           <button class="view-tab is-active" id="tab-control" type="button" aria-controls="view-control" aria-pressed="true">CONTROL</button>
           <button class="view-tab" id="tab-monitor" type="button" aria-controls="view-monitor" aria-pressed="false">MONITOREO</button>
+          <button class="view-tab" id="tab-admin" type="button" aria-controls="view-admin" aria-pressed="false" hidden>MI CUENTA</button>
         </nav>
 
         <section id="view-control" class="app-view" aria-labelledby="tab-control">
+          <button id="control-account" class="account-return" type="button" hidden>Mi cuenta</button>
         <div class="control-layout">
         <section class="panel commands-panel" aria-labelledby="commands-title">
           <div class="panel-heading">
@@ -175,10 +177,25 @@
           </section>
           <p class="monitor-disclaimer"><span aria-hidden="true">ⓘ</span> WSS confirma eventos recibidos por esta sesión. La API confirma solicitudes; el historial representa persistencia reportada por el backend. Ninguno confirma por sí solo movimiento físico.</p>
         </section>
+        <section id="view-admin" class="app-view account-view" aria-labelledby="tab-admin" hidden>
+          <div class="account-heading"><div><h2 id="account-title">Mi cuenta</h2><p id="account-user">Inicia sesión para administrar tus vehículos.</p></div><button type="button" id="account-logout" class="presentation-button" hidden>Cerrar sesión</button></div>
+          <p id="account-message" role="status" aria-live="polite"></p>
+          <form id="account-login" class="panel account-login">
+            <h3>Iniciar sesión</h3>
+            <label>Correo<input name="correo" type="email" required autocomplete="username"></label>
+            <label>Contraseña<input name="password" type="password" required autocomplete="current-password"></label>
+            <button type="submit">Entrar</button>
+          </form>
+          <div id="account-content" hidden>
+            <nav id="account-menu" class="account-menu" aria-label="Gestión de la cuenta"></nav>
+            <div id="account-workspace"></div>
+          </div>
+        </section>
       </main>
 
       <footer class="footer"><span>CONTROL IoT <span class="footer-separator">/</span> MONTACARGAS</span><span>Desarrollado por <strong>León Hernández Iran Pascual</strong> · 2026</span></footer>
     </div>
     <script type="module" src="./js/main.js"></script>
+    <script type="module" src="./js/administration.js"></script>
   </body>
 </html>

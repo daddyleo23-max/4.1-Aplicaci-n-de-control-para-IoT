@@ -263,5 +263,37 @@ La suite de 34 pruebas locales pasó. probar_editor_demos.py está preparado
 para crear, leer, editar y desactivar una demo privada de DETENER sin iniciar
 su ejecución; verifica ocultación al segundo comprador, conflicto de revisión
 y rechazo de un comando ajeno conservando la secuencia guardada.
-Migración SQL, pruebas HTTP reales, interfaz visual y regresión de ejecución
-de demos con los nuevos permisos están pendientes de esta entrega.
+La comprobación real descubrió una inversión de id_comando/orden al insertar
+pasos. La migración 008 reemplaza sp_editor_guardar_demo y corrige 007 para
+instalaciones nuevas. Se conservó el índice único de orden por demo.
+
+## Validación real de la corrección 008
+
+El usuario confirmó código MySQL 0 y conservación de datos/procedimientos.
+La prueba reanudada sobre demo 3 pasó guardado completo, ocultación al otro
+comprador, rechazo de revisión antigua, rechazo de comando incompatible,
+conservación de secuencia y desactivación de la demo de prueba.
+Informes del servidor: migracion_008_20261122-014130-719759.json y
+prueba_editor_8080db762b0d.json.
+
+## Interfaz 4.3 en preparación para pruebas aisladas
+
+La vista Mi cuenta integra login, menú por rol, resumen, modelos, compradores,
+configuración y asignación de unidades, auditoría, vehículos del comprador
+y editor visual de demos. La selección de unidad conecta control/monitoreo
+mediante sesión Bearer y autenticación del primer mensaje del WebSocket.
+Las credenciales y tokens se mantienen solamente en memoria de la pestaña.
+Cambiar de cuenta limpia catálogo e historial y cierra el socket previo.
+
+El paquete frontend_4_3_prueba.zip usa localhost:8001 y modo sesiones.
+El config.js del repositorio conserva el modo API key de producción hasta
+publicar el backend de sesiones. La interfaz nueva aún requiere validación
+con las cuentas reales en el servidor Windows. Quedan pendientes los demás
+requisitos 4.3, la regresión de ejecución y el despliegue final.
+
+Comprobaciones locales de interfaz: sintaxis de todos los módulos JavaScript,
+ZIP íntegro y sin auth.local.js, pantalla de acceso en escritorio y viewport
+390 px sin desbordamiento, error de conexión recuperable al enviar el login
+con el backend apagado. La revisión horizontal posterior quedó interrumpida
+por desconexión del servidor de vista previa. No se verificaron formularios
+autenticados localmente contra el servidor Windows.

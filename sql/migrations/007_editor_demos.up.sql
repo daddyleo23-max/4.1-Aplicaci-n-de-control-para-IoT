@@ -119,7 +119,7 @@ BEGIN
         DELETE FROM demo_movimientos WHERE id_demo=v_demo;
     END IF;
     INSERT INTO demo_movimientos(id_demo,id_comando,orden,duracion_ms,pausa_ms)
-    SELECT v_demo,j.orden,j.id_comando,j.duracion_ms,j.pausa_ms
+    SELECT v_demo,j.id_comando,j.orden,j.duracion_ms,j.pausa_ms
     FROM JSON_TABLE(p_pasos,'$[*]' COLUMNS(
         orden FOR ORDINALITY,
         id_comando INT PATH '$.id_comando',

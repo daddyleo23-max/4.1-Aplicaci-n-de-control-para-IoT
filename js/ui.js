@@ -47,6 +47,10 @@ export function setDemoStatus(message) {
 
 const normalize = (text = '') => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
 const available = (command) => Boolean(command && command.activo !== false && command.activo !== 0);
+let commandBindings = new AbortController();
+function bindPhysical(button, type, handler) {
+  button.addEventListener(type, handler, { signal: commandBindings.signal });
+}
 
 function findCommand(commands, aliases) {
   const accepted = aliases.map(normalize);
@@ -67,7 +71,7 @@ function bindSingleCommand(button, commands, aliases, onCommand, unavailableText
     return null;
   }
   button.title = command.descripcion || command.nombre;
-  button.addEventListener('click', () => onCommand(command));
+  bindPhysical(button, 'click', () => onCommand(command));
   return command;
 }
 
@@ -95,19 +99,19 @@ function bindTimedButton(button, shortCommand, longCommand, onShort, onLong, thr
     }
   };
 
-  button.addEventListener('pointerdown', start);
-  button.addEventListener('pointerup', end);
-  button.addEventListener('pointercancel', end);
-  button.addEventListener('lostpointercapture', end);
-  button.addEventListener('keydown', (event) => {
+  bindPhysical(button, 'pointerdown', start);
+  bindPhysical(button, 'pointerup', end);
+  bindPhysical(button, 'pointercancel', end);
+  bindPhysical(button, 'lostpointercapture', end);
+  bindPhysical(button, 'keydown', (event) => {
     if (event.repeat || ![' ', 'Enter'].includes(event.key)) return;
     start(event);
   });
-  button.addEventListener('keyup', (event) => {
+  bindPhysical(button, 'keyup', (event) => {
     if ([' ', 'Enter'].includes(event.key)) end(event);
   });
-  button.addEventListener('blur', () => end());
-  button.addEventListener('click', () => {
+  bindPhysical(button, 'blur', () => end());
+  bindPhysical(button, 'click', () => {
     const longPress = measuredDuration !== null && measuredDuration >= thresholdMs;
     measuredDuration = null;
     if (longPress) onLong(longCommand);
@@ -116,6 +120,8 @@ function bindTimedButton(button, shortCommand, longCommand, onShort, onLong, thr
 }
 
 export function renderCommands(commands, { onCommand, onDemo, onUnavailable }) {
+  commandBindings.abort();
+  commandBindings = new AbortController();
   const activeCount = commands.filter(available).length;
   $('#command-count').textContent = `${activeCount} comandos activos · API`;
 
@@ -132,7 +138,7 @@ export function renderCommands(commands, { onCommand, onDemo, onUnavailable }) {
     demoButton.disabled = !demoCommand;
     demoButton.dataset.available = String(Boolean(demoCommand));
     demoButton.title = demoCommand ? 'Iniciar la secuencia DEMO seleccionada.' : 'La función DEMO no aparece activa en el catálogo.';
-    if (demoCommand) demoButton.addEventListener('click', () => onDemo(demoCommand));
+    if (demoCommand) bindPhysical(demoButton, 'click', () => onDemo(demoCommand));
   }
 
   const horn = findCommand(commands, ['SONIDO', 'CLAXON', 'HORN']);
@@ -182,7 +188,7 @@ export function renderDemos(demos) {
   select.disabled = !demos.length;
   $('#demo-start').disabled = true;
   $('#demo-cancel').disabled = true;
-  select.addEventListener('change', () => { $('#demo-start').disabled = !select.value; });
+  select.onchange = () => { $('#demo-start').disabled = !select.value; };
 }
 
 export const elements = {

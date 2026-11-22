@@ -1,8 +1,12 @@
+import { config } from './config.js';
+import { currentToken, sessionHeaders } from './account-session.js';
+
 let localApiKey = '';
 let sessionApiKey = '';
 const localHosts = new Set(['localhost', '127.0.0.1', '::1']);
 
 export async function initializeLocalAuth() {
+  if (config.sessionAuth) return;
   if (!localHosts.has(window.location.hostname)) return;
   try {
     const localConfig = await import('./auth.local.js');
@@ -13,6 +17,10 @@ export async function initializeLocalAuth() {
 }
 
 export function getWriteHeaders() {
+  if (config.sessionAuth) {
+    if (!currentToken()) throw new Error('Inicia sesión en Mi cuenta.');
+    return sessionHeaders();
+  }
   if (localHosts.has(window.location.hostname)) {
     if (!localApiKey) {
       throw new Error('Falta la clave local. Copia js/auth.local.example.js a js/auth.local.js y configúrala solo en tu equipo.');
