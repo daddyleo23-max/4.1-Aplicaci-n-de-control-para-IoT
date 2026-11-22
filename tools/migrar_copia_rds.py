@@ -76,7 +76,7 @@ def snapshot(cursor, schema):
     )
     data["procedimientos"] = [
         row for row in cursor.fetchall()
-        if not row["ROUTINE_NAME"].startswith(("sp_auth_", "sp_admin_", "sp_usuario_", "sp_acceso_", "sp_editor_", "sp_catalogo_", "sp_invitado_", "sp_reserva_", "sp_soporte_", "sp_control_"))
+        if not row["ROUTINE_NAME"].startswith(("sp_auth_", "sp_admin_", "sp_usuario_", "sp_acceso_", "sp_editor_", "sp_catalogo_", "sp_invitado_", "sp_reserva_", "sp_soporte_", "sp_control_", "sp_capacidad_"))
     ]
     return data
 
@@ -140,8 +140,9 @@ def main():
     migrations["015_api_control_comprador.up.sql"] = ("015", TABLES_011 | {"permisos_soporte", "sesiones_control"})
     migrations["016_soporte_operativo.up.sql"] = ("016", TABLES_011 | {"permisos_soporte", "sesiones_control"})
     migrations["017_listas_soporte_web.up.sql"] = ("017", TABLES_011 | {"permisos_soporte", "sesiones_control"})
+    migrations["018_capacidades_modelo.up.sql"] = ("018", TABLES_011 | {"permisos_soporte", "sesiones_control"})
     if sql.name not in migrations:
-        raise SystemExit("Este ejecutor admite las migraciones 001 a 017.")
+        raise SystemExit("Este ejecutor admite las migraciones 001 a 018.")
     version, expected_tables = migrations[sql.name]
     root = Path.cwd()
     sys.path.insert(0, str(root))
@@ -181,6 +182,17 @@ def main():
                 cursor.execute("SELECT COUNT(*) AS n FROM reservas_control")
                 if cursor.fetchone()["n"]:
                     raise SystemExit("Cierra todas las reservas desde la aplicación antes de aplicar 016.")
+            if version == "018":
+                checks = [
+                    "SELECT 1 FROM comandos c JOIN vehiculos v ON v.id_vehiculo=c.id_vehiculo WHERE v.id_modelo IS NULL LIMIT 1",
+                    "SELECT 1 FROM comandos c JOIN vehiculos v ON v.id_vehiculo=c.id_vehiculo GROUP BY v.id_modelo,c.codigo HAVING COUNT(DISTINCT c.nombre)>1 LIMIT 1",
+                    "SELECT 1 FROM comandos c JOIN vehiculos v ON v.id_vehiculo=c.id_vehiculo GROUP BY v.id_modelo,c.nombre HAVING COUNT(DISTINCT c.codigo)>1 LIMIT 1",
+                    "SELECT 1 FROM comandos WHERE codigo NOT BETWEEN 1 AND 65535 OR nombre IS NULL OR LENGTH(TRIM(nombre))=0 LIMIT 1",
+                ]
+                for statement in checks:
+                    cursor.execute(statement)
+                    if cursor.fetchone():
+                        raise SystemExit("Catálogo ambiguo o unidad sin modelo: revisar antes de aplicar 018. No se ejecutó DDL.")
             before = snapshot(cursor, args.copia)
         report = {"copia": args.copia, "antes": before,
                   "archivo_sql": sql.name, "sql_sha256": hashlib.sha256(sql.read_bytes()).hexdigest()}

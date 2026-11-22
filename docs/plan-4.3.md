@@ -906,3 +906,38 @@ cierra WSS y libera el control del admin. Usa fixtures locales sin hardware,
 no la unidad real de RDS. Falta validar SQL017 e interfaz en Windows/RDS.
 El paquete entrega_018_soporte_web.zip incluye SQL, ejecutor, backend completo
 y ZIP del frontend configurado para localhost8001. Sin credenciales locales.
+
+## Capacidades por modelo: base SQL018 / entrega019
+
+El usuario confirmó el recorrido de consentimiento y acceso de soporte web
+tras SQL017 y la actualización de ambas aplicaciones. Se conserva esa
+confirmación como validación manual en Windows/RDS; no se afirma prueba de
+movimiento físico.
+
+Nueva capacidades_modelo: identidad por modelo+nombre/código, descripción,
+activo y FK al modelo. Importa únicamente capacidades presentes en comandos
+existentes y deriva activo mediante MAX sin cambiar el activo de cada unidad.
+No crea funciones de firmware ni cambia IDs/filas de comandos ni las 21 SP
+originales. Antes de DDL el ejecutor comprueba unidades con comandos sin
+modelo, códigos/nombres ambiguos y códigos fuera de rango. Una ambigüedad
+requiere revisar catálogo, no escoger una equivalencia automáticamente.
+
+SP nuevas para listar/guardar capacidades, listar comandos con compatibilidad,
+guardar un comando de unidad desde una capacidad y exigir compatibilidad.
+Nombres/códigos usados se conservan, los comandos mantienen IDs, se rechazan
+capacidades de otro modelo y activación sobre capacidad deshabilitada. Una
+capacidad con comandos activos no puede desactivarse hasta desactivar esos
+comandos; DETENER de unidad activa no se desactiva. Se bloquea la edición de
+comandos de unidad reservada y capacidades de modelos con reservas. Auditoría
+GUARDAR_CAPACIDAD y GUARDAR_COMANDO_UNIDAD. Longitudes alineadas al esquema
+original: nombre60 y descripción255. Comparaciones entre catálogo y capacidad
+usan collation explícita común sin alterar tablas existentes.
+
+21 comprobaciones SQL locales correctas con ROLLBACK, fixtures nuevas sin
+hardware. Se detectó un cruce de collations en MariaDB local al comparar
+catálogo/capacidad; se corrigieron comparaciones y se repitieron las 21
+comprobaciones también con collations diferentes en ambas tablas. RDS/MySQL8.4
+queda pendiente de validar por el usuario. El ZIP incluye SQL018, ejecutor
+actualizado y probar_capacidades_sql.py. No necesita cambiar backend/frontend
+en esta etapa. La integración de la validación en rutas de ejecución y de
+los formularios administrativos sigue pendiente tras aprobar la base SQL.
