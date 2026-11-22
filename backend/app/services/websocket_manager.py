@@ -38,6 +38,10 @@ class WebSocketManager:
                         row = await asyncio.to_thread(guest_service.context, websocket.state.session_token)
                         if row["id_vehiculo"] != id_vehiculo:
                             raise ValueError("Suscripción incompatible")
+                    elif getattr(websocket.state, "auth_kind", None) == "control":
+                        from app.services.control_service import control_service
+                        await asyncio.to_thread(check_socket_access, websocket.state.session_token, id_vehiculo)
+                        await control_service.context(websocket.state.control_id, websocket.state.account_session)
                     else:
                         await asyncio.to_thread(
                             check_socket_access, websocket.state.session_token, id_vehiculo,

@@ -18,6 +18,8 @@ from app.routers.editor_demos import router as editor_demos_router
 from app.routers.catalogo import router as catalogo_router
 from app.routers.invitados import router as invitados_router
 from app.routers.soporte import router as soporte_router
+from app.routers.control import router as control_router
+from app.services.control_service import control_service
 from app.services.guest_service import guest_service
 from app.resource_security import authorize_resources, sessions_enabled
 
@@ -25,9 +27,18 @@ from app.resource_security import authorize_resources, sessions_enabled
 @asynccontextmanager
 async def lifespan(application):
     task = asyncio.create_task(guest_service.worker()) if sessions_enabled() else None
+    control_task = asyncio.create_task(control_service.worker()) if sessions_enabled() else None
     try:
         yield
     finally:
+        if control_task is not None:
+            control_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await control_task
+            try:
+                await control_service.shutdown()
+            except Exception:
+                logging.getLogger(__name__).warning("Quedan reservas de comprador pendientes de parada.")
         if task is not None:
             task.cancel()
             with suppress(asyncio.CancelledError):
@@ -79,6 +90,7 @@ app.include_router(editor_demos_router)
 app.include_router(catalogo_router)
 app.include_router(invitados_router)
 app.include_router(soporte_router)
+app.include_router(control_router)
 
 
 @app.get("/health/db")

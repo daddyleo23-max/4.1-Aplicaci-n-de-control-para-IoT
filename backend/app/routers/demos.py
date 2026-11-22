@@ -84,12 +84,20 @@ def obtener_movimientos_demo(id_demo: int):
 
 
 @router.post("/vehiculos/{id_vehiculo}/demos/{id_demo}/iniciar", status_code=202, dependencies=[Depends(verificar_api_key)])
-async def iniciar_demo(id_vehiculo: int, id_demo: int):
-    return await demo_service.iniciar(id_vehiculo, id_demo)
+async def iniciar_demo(id_vehiculo: int, id_demo: int, request: Request):
+    control = None
+    if sessions_enabled() and request.state.session['rol'] == 'USUARIO':
+        from app.services.control_service import control_service
+        row = await control_service.lease(request.state.session,id_vehiculo)
+        control = (row['id_control'],request.state.session['id_sesion'],id_vehiculo)
+    return await demo_service.iniciar(id_vehiculo, id_demo, control=control)
 
 
 @router.post("/vehiculos/{id_vehiculo}/demos/cancelar", dependencies=[Depends(verificar_api_key)])
-async def cancelar_demo(id_vehiculo: int):
+async def cancelar_demo(id_vehiculo: int, request: Request):
+    if sessions_enabled() and request.state.session['rol'] == 'USUARIO':
+        from app.services.control_service import control_service
+        await control_service.lease(request.state.session,id_vehiculo)
     return await demo_service.cancelar(id_vehiculo)
 
 

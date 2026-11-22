@@ -733,3 +733,62 @@ El esquema ampliado acepta las inserciones Invitado previas sin cambios.
 El ejecutor admite 014 sólo con el conjunto de tablas y versiones 001–013
 esperados. Ante fallo DDL parcial revisar informe, no repetir a ciegas.
 Conservar tabla e historial para reversión conservadora; no DROP automático.
+
+## Validación RDS de la base 014 y API de comprador (015 / entrega 016)
+
+El usuario completó las 54 comprobaciones SQL de control e Invitado sobre
+RDS. Informe control_sql_20261122-064051-395315.json, con ROLLBACK y fixtures
+revertidas. Esa evidencia valida las rutinas SQL, no todavía REST/WSS.
+
+Se incorpora ControlService, router control y worker independiente de
+Invitado. Una sesión de comprador adquiere la unidad propia mediante POST
+/vehiculos/{id}/control/reservar y autentica /ws/control/{id_control}. Un
+solo canal por reserva. El mensaje renovar mantiene una vigencia SQL de
+45 s, limitada por la cuenta; no basta con dejar abierto un socket sin
+renovar. Sin canal, una reserva nueva se cierra a los 20 s. GET
+/vehiculos/{id}/control informa ocupación sin filtrar IDs de otras sesiones.
+POST /control/{id_control}/cerrar exige la sesión titular, incluso cuando
+la reserva ya venció (pero la cuenta debe seguir vigente). Logout invalida
+SQL y provoca cierre en el worker/canal. Cada envío vuelve a validar sesión,
+propiedad, reserva y recurso. Monitoreo previo mantiene sus rutas y WSS.
+
+Los movimientos del comprador ahora requieren esa reserva y canal; otra
+sesión del mismo usuario puede monitorear pero no mover ni cancelar demos.
+El inicio y cada paso de demo validan la reserva. DETENER interrumpe la demo
+y espera su finalización antes de registrar la parada. Los writes SQL de
+la demo se esperan aunque se cancele el await: cancelar un hilo no es
+interrumpir MySQL. Cancelar el HTTP de adquisición/movimiento también espera
+SQL y cierra conservadoramente la reserva. Cierres simultáneos se deduplican.
+El servicio conserva DETENIENDO si falla la parada/publicación y el worker
+reintenta. Al arrancar recupera reservas previas antes de aceptar nuevas;
+al salir solicita cierre. Se mantiene UN proceso Uvicorn, con coordinación
+y sockets en memoria. Los procedimientos originales continúan intactos.
+
+Nueva migración 015 añade contexto, movimiento transaccional y DETENER de
+reserva; no cambia datos originales ni requiere triggers nuevos. Debe
+aplicarse antes de actualizar el backend. La prueba HTTP crea un comprador
+y una unidad NUEVOS sin hardware; conserva modelo privado/unidad asignada
+por integridad histórica y desactiva al comprador al finalizar. No se
+publican credenciales ni se asocia hardware a esa unidad de software.
+
+Validación local: 101 pruebas unitarias, incluidas cancelación durante SQL,
+orden demo→DETENER→liberación, fallos de parada/publicación sin liberar,
+deduplicación de cierres y rechazo de sesión ajena/sin canal. Recorrido real
+contra FastAPI/MariaDB desechable: 43 comprobaciones correctas, con segunda
+sesión/canal rechazados, renovación, movimientos, prioridad DETENER durante
+demo, cierre explícito, desconexión, logout y caducidad real de 45 s sin
+renovar. Informe local control_http_022f41095658.json. Además, las 41
+comprobaciones REST/WS previas de Invitado pasaron con el backend nuevo,
+incluida conservación de la unidad 1 (http_invitados_497dbf051882.json).
+Un intento local anterior consultó la nueva ruta de estado antes de
+reiniciar Uvicorn; se reinició y se repitió el recorrido completo aprobado.
+
+Queda pendiente validar SQL015/API en RDS/Windows e integrar adquisición,
+renovación y liberación en el frontend. La web anterior no adquiere esa
+reserva, por lo que el comprador recibirá 409 si intenta operar con ella;
+no publicar esta etapa aislada. Soporte operativo sigue pendiente (su
+consentimiento actual es únicamente diagnóstico). Ninguna confirmación
+HTTP/WS acredita parada física; los límites/watchdog del firmware requieren
+validación específica. Antes de volver a backend anterior, cerrar las
+reservas de comprador con este servicio y verificar ausencia de pendientes;
+conservar tablas e historial, sin DROP ni liberar manualmente una parada.

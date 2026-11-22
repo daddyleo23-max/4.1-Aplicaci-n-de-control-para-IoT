@@ -1,6 +1,6 @@
 from fastapi import Depends
 from app.security import verificar_api_key
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 import pymysql
 
 
@@ -18,9 +18,13 @@ servicio = ProcedimientoService()
 async def registrar_movimiento(
     id_vehiculo: int,
     movimiento: MovimientoRequest,
+    request: Request,
 ):
     from app.resource_security import sessions_enabled
     from app.services.demo_service import demo_service
+    if sessions_enabled() and request.state.session['rol'] == 'USUARIO':
+        from app.services.control_service import control_service
+        return await control_service.move(request.state.session,id_vehiculo,movimiento.id_comando)
     if sessions_enabled():
         async with demo_service.bloqueo:
             return await _registrar_movimiento(id_vehiculo, movimiento)

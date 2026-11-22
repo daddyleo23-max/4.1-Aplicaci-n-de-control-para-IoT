@@ -13,7 +13,7 @@ class DemoService:
         self.tareas: dict[int, asyncio.Task] = {}
         self.bloqueo = asyncio.Lock()
 
-    async def iniciar(self, id_vehiculo: int, id_demo: int) -> dict:
+    async def iniciar(self, id_vehiculo: int, id_demo: int, control=None) -> dict:
         vehiculos = await asyncio.to_thread(
             self.servicio.ejecutar_consulta,
             "sp_obtener_vehiculo",
@@ -59,14 +59,14 @@ class DemoService:
                 import pymysql
                 try:
                     await asyncio.to_thread(self.servicio.ejecutar_transaccion,
-                                            [("sp_reserva_exigir_libre", (id_vehiculo,))])
+                                            [("sp_control_exigir", control)] if control else [("sp_reserva_exigir_libre", (id_vehiculo,))])
                 except pymysql.MySQLError as error:
                     if error.args[0] in (1644, 1205, 1213):
                         raise HTTPException(409, "La unidad tiene una reserva activa.") from error
                     raise
 
             tarea = asyncio.create_task(
-                self._ejecutar(id_vehiculo, id_demo, movimientos)
+                self._ejecutar(id_vehiculo, id_demo, movimientos, control=control)
             )
             self.tareas[id_vehiculo] = tarea
 
@@ -92,7 +92,7 @@ class DemoService:
         }
 
     async def _ejecutar(
-        self, id_vehiculo: int, id_demo: int, movimientos: list[dict]
+        self, id_vehiculo: int, id_demo: int, movimientos: list[dict], control=None
     ) -> None:
         try:
             await manager.enviar_a_vehiculo(
@@ -109,9 +109,10 @@ class DemoService:
 
             for movimiento in movimientos:
                 # Usar una transacción para confirmar el cambio de estado.
-                await asyncio.to_thread(
+                from app.services.control_service import complete
+                await complete(asyncio.to_thread(
                     self.servicio.ejecutar_transaccion,
-                    [(
+                    ([("sp_control_exigir", control)] if control else []) + [(
                         "sp_actualizar_estado",
                         (
                             id_vehiculo,
@@ -119,7 +120,7 @@ class DemoService:
                             conectado,
                         ),
                     )],
-                )
+                ))
 
                 await manager.enviar_a_vehiculo(
                     id_vehiculo,
@@ -185,13 +186,14 @@ class DemoService:
                 )
                 conectado = estados[0]["conectado"] if estados else 0
 
-                await asyncio.to_thread(
+                from app.services.control_service import complete
+                await complete(asyncio.to_thread(
                     self.servicio.ejecutar_transaccion,
                     [(
                         "sp_actualizar_estado",
                         (id_vehiculo, detener["id_comando"], conectado),
                     )],
-                )
+                ))
 
                 evento = {
                     **self._evento(tipo_evento, id_vehiculo, id_demo),

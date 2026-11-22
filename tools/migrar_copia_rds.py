@@ -137,8 +137,9 @@ def main():
     )
     migrations["013_soporte_diagnostico.up.sql"] = ("013", TABLES_011)
     migrations["014_reservas_comprador.up.sql"] = ("014", TABLES_011 | {"permisos_soporte"})
+    migrations["015_api_control_comprador.up.sql"] = ("015", TABLES_011 | {"permisos_soporte", "sesiones_control"})
     if sql.name not in migrations:
-        raise SystemExit("Este ejecutor admite las migraciones 001 a 014.")
+        raise SystemExit("Este ejecutor admite las migraciones 001 a 015.")
     version, expected_tables = migrations[sql.name]
     root = Path.cwd()
     sys.path.insert(0, str(root))
