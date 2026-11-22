@@ -109,3 +109,12 @@ GitHub Pages construido y versión4.3 accesible en el hosting original. API HTTP
 errores de consola. CORS y rechazos anónimos REST/WSS comprobados. Los pendientes
 actuales son el recorrido público autenticado, teléfono físico, evidencias
 finales y rondas de compañeros; ver verificacion-publica-4.3.md.
+
+
+## Actualización: prueba pública autenticada aprobada
+
+El informe citado por el alumno cierre_4_3_0c48517ad035.json confirma las44
+comprobaciones HTTPS/WSS de empresa mediante Caddy. El pendiente genérico de
+WS autorizado/control/demo público queda verificado para ese escenario. Se
+mantienen teléfono real, recorridos por roles Comprador/Invitado, evidencias y
+rondas de compañeros; no se afirma prueba física del vehículo.

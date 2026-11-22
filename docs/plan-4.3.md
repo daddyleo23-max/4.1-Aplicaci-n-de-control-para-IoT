@@ -1186,3 +1186,15 @@ sin errores. CORS de POST permitió el origen exacto; Administración anónima40
 WSS anónimo con token inválido cerró1008 sin filtrar estado. Evidencia pública en
 verificacion-publica-4.3.md. Pendientes: prueba pública autenticada, teléfono y
 rondas colaborativas. Publicar no equivale a práctica evaluada por completo.
+
+
+## Prueba HTTPS/WSS autenticada de empresa aprobada
+
+El alumno ejecutó probar_publicacion_4_3.py contra https://34.194.45.28 y
+confirmó la secuencia completa sin errores. Informe privado
+cierre_4_3_0c48517ad035.json:44 comprobaciones, control exclusivo de empresa,
+canal autorizado, movimientos/demos/DETENER, liberación por cierre/desconexión,
+catálogo/resumen, reserva de Invitado bloqueada por empresa, auditoría y429.
+No opera unidad1; registros nuevos privados/inactivos. Backend4.3.0 y
+vehiculo_iot_43/MySQL8.4.9 confirmados. Pendientes: teléfono, recorridos de roles
+Comprador/Invitado en interfaz pública y rondas colaborativas con evidencias.

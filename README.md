@@ -21,10 +21,12 @@ Migraciones001–020, recuperación019, restauración íntegra y pruebas SQL/HTT
 la copia fueron aprobadas por el alumno. La versión publicada se comprobó en
 navegador: carga de módulos/asset, API y RDS disponibles, catálogo consultado
 sin errores de consola. También se verificaron CORS,401 sin sesión y rechazo
-WSS de un token inválido. [Evidencia pública](docs/verificacion-publica-4.3.md).
+WSS de un token inválido. El alumno aprobó además la prueba pública autenticada
+de empresa/control/demo (`cierre_4_3_0c48517ad035.json`), a través de HTTPS/WSS
+y Caddy. [Evidencia pública](docs/verificacion-publica-4.3.md).
 
-**Pendientes de evaluación:** recorrido público autenticado REST/WSS,
-comprobación en teléfono físico y rondas P01–P17 con compañeros. Las pruebas
+**Pendientes de evaluación:** recorridos de Comprador e Invitado desde la
+interfaz pública, comprobación en teléfono físico y rondas P01–P17 con compañeros. Las pruebas
 anteriores en localhost no sustituyen esos escenarios. No se afirma ejecución
 física del vehículo por recibir eventos del servidor.
 
