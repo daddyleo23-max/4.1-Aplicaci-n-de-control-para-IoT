@@ -1142,3 +1142,29 @@ El launcher fuerza modo sesiones y esquema final sin editar el .env original.
 Pendiente: ejecución de este preparador en RDS por el alumno, validación8002,
 candidato Caddy, publicación del frontend y recorrido público. No se ha
 activado aún ningún cambio público en este paso.
+
+
+## Backend definitivo aprobado; preparación de cambio Caddy
+
+El alumno confirmó publicacion_base_20261122-192805-949141.json: origen conservado,
+restauración íntegra y cuenta limitada con EXECUTE. Luego verificó8002 con4.3.0,
+conectadoTrue, vehiculo_iot_43 y MySQL8.4.9.
+
+La URL pública HTTPS se consultó desde el entorno del agente: certificado válido
+y API1.0.0 todavía. GitHub Pages sirve main desde raíz y la CLI tiene permiso de
+push; origen/main es ancestro del trabajo local. Se prepara configuración pública
+con sesiones y el asset del catálogo (igual al paquete probado); no se hace push
+antes de que el cambio del proxy quede confirmado.
+
+Gestor de Caddy: prepara sólo el cambio de upstream8000→8002, verifica equivalencia
+nativa/archivo/runtime, valida, recarga con respaldo y comprueba versión/base por
+HTTPS. Conserva TLS y no detiene procesos. Persistencia del Caddyfile y reversión
+ante fallos; rechaza cambios concurrentes y administración no local. Configuración
+nativa y respaldos se guardan privados, nunca en el paquete ni repositorio.
+
+142 unitarias correctas. Integración con Caddy2.11.9 oficial y backends HTTP locales:
+activación, persistencia, reversión explícita, reversión por salud incorrecta y por
+escritura parcial, y rechazo de archivo cambiado. No se presenta ese ensayo HTTP
+como validación públicaTLS/WSS. Se incluye prueba pública posterior sobre nuevas
+unidades de software. Pendientes: ejecutar gestor en Windows, publicar frontend,
+prueba pública real y rondas de compañeros.

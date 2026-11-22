@@ -19,9 +19,10 @@ MONT deja sólo MONT-001. **La publicación pública de4.3 y sus pruebas finales
 siguen pendientes**.
 
 [Hosting original](https://daddyleo23-max.github.io/4.1-Aplicaci-n-de-control-para-IoT/)
-no se presenta como versión 4.3 aprobada. El `js/config.js` raíz conserva modo
-anterior hasta la puesta en servicio; los ZIP de prueba habilitan sesiones y
-API localhost 8001. No subir ese ZIP de pruebas a GitHub Pages.
+todavía requiere completar el cambio de proxy y publicación. El `js/config.js`
+raíz está preparado con sesiones y API HTTPS pública; su publicación se coordina
+tras validar el proxy8002. Los ZIP de prueba apuntan a localhost8001 y no deben
+subirse a GitHub Pages.
 
 ## Documentación y ejecución
 
@@ -30,6 +31,7 @@ Si la entrega022 falló en 019 con ERROR1832, usar la [recuperación específica
 - [Arquitectura, ER y roles](docs/arquitectura-4.3.md)
 - [Inventario de contratos antes/después](docs/inventario-contratos-4.3.md)
 - [Contratos HTTP/WS](docs/contratos-4.3.md) y [OpenAPI generado](docs/openapi-4.3.json)
+- [Cambio y reversión del proxy público](docs/proxy-publico-4.3.md)
 - [Preparación de la base y backend definitivos](docs/publicacion-4.3.md)
 - [Migraciones, instrucciones Windows, despliegue y recuperación](docs/despliegue-4.3.md)
 - [Matriz de evaluación P01–P17 y rotaciones](docs/matriz-4.3.md)

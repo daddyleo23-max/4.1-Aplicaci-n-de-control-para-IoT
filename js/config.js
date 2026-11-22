@@ -13,7 +13,7 @@ export function selectVehicle(id, { support = null } = {}) {
 }
 
 export const config = Object.freeze({
-  sessionAuth: false,
+  sessionAuth: true,
   apiBaseUrl: 'https://34.194.45.28',
   get vehicleId() { return selectedVehicleId; },
   apiHealthPath: '/',

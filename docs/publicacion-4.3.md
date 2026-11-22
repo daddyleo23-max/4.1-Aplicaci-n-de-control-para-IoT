@@ -82,8 +82,9 @@ previa para revertir el proxy. No cambiar certificados ni borrar el backend8000.
 Después: publicar frontend de sesiones en el repositorio original y verificar
 HTTPS/WSS desde la URL pública, teléfono y escritorio.
 
-La configuración en disco del repositorio todavía conserva el modo anterior;
-no subir frontend de prueba localhost a GitHub Pages. La publicación requiere
+El repositorio local ya tiene preparada la configuración de sesiones y origen
+HTTPS público; se publicará tras activar y validar Caddy. No subir frontend
+de prueba localhost a GitHub Pages. La publicación requiere
 coordinar proxy y frontend y comprobar contratos reales después del cambio.
 
 ## Verificación del preparador
@@ -91,5 +92,5 @@ coordinar proxy y frontend y comprobar contratos reales después del cambio.
 Probado con MySQL8.4.13 local: dump/restore real con clientes MySQL, comparación
 integral, permisos EXECUTE, restricciones CHECK y rechazo de destino existente
 sin sobrescribirlo. El nuevo arranque8002 también se comprobó con la cuenta limitada: versión4.3.0
-y health/db sobre vehiculo_iot_43. La ejecución en RDS8.4.9 y el proxy real requieren los
-informes del alumno. Ninguna de estas pruebas locales confirma movimiento físico.
+y health/db sobre vehiculo_iot_43. El alumno confirmó la clonación en RDS8.4.9 y el arranque8002 con la cuenta
+limitada; el proxy real sigue pendiente de activación. Ninguna de estas pruebas locales confirma movimiento físico.
