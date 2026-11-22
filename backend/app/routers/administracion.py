@@ -60,6 +60,16 @@ class ModelUpdate(ModelRequest):
     activo: bool
 
 
+class ModelPublication(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    publico: bool
+
+
+class ExhibitionConfiguration(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    habilitada: bool
+
+
 class ClientUpdate(BaseModel):
     nombre: str = Field(min_length=1, max_length=120)
     correo: str = Field(min_length=3, max_length=254, pattern=r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
@@ -163,11 +173,32 @@ def assign_unit(id_vehiculo: int, data: AssignmentRequest,
                   (session["id_usuario"], id_vehiculo, data.id_usuario))
 
 
+@router.post("/unidades/{id_vehiculo}/exhibicion")
+async def set_exhibition(id_vehiculo: int, data: ExhibitionConfiguration,
+                         session: dict = Depends(require_admin)):
+    if id_vehiculo <= 0:
+        raise HTTPException(422, "El identificador debe ser positivo.")
+    async with demo_service.bloqueo:
+        task = demo_service.tareas.get(id_vehiculo)
+        if task is not None and not task.done():
+            raise HTTPException(409, "Espera o cancela la demo antes de configurar exhibición.")
+        return await asyncio.to_thread(create, "sp_admin_marcar_exhibicion",
+                                       (session["id_usuario"], id_vehiculo, data.habilitada))
+
+
 @router.post("/modelos/{id_modelo}/actualizar")
 def update_model(id_modelo: int, data: ModelUpdate,
                  session: dict = Depends(require_admin)):
     return create("sp_admin_actualizar_modelo",
                   (session["id_usuario"], id_modelo, data.nombre, data.descripcion, data.activo))
+
+
+@router.post("/modelos/{id_modelo}/publicacion")
+def publish_model(id_modelo: int, data: ModelPublication,
+                  session: dict = Depends(require_admin)):
+    if id_modelo <= 0:
+        raise HTTPException(422, "El identificador debe ser positivo.")
+    return create("sp_admin_publicar_modelo", (session["id_usuario"], id_modelo, data.publico))
 
 
 @router.post("/clientes/{id_usuario}/actualizar")

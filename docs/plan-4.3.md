@@ -349,3 +349,54 @@ definición anterior de listado está en 003_gestion_comercial.up.sql; restaurar
 sólo esa rutina con el backend/frontend anterior permite volver a la versión
 previa. No ejecutar 003 completa sobre una base ya migrada. La migración no
 cambia filas, pero no se confía en ROLLBACK para deshacer sus CREATE/DROP.
+
+## Validación real de 009
+
+El usuario confirmó migracion_009_20261122-025030-188422.json, MySQL 0 y datos
+y procedimientos conservados. Ejecutó probar_inventario_http.py y pasó todos
+los resultados previstos: altas, edición, duplicados, conservación tras rechazo,
+401/403, bajas lógicas de unidades nuevas 3 y 4, rechazo de asignación inactiva
+y auditoría. Informe http_inventario_257cb1811281.json. Confirmó actualizar el
+frontend y ver Nueva unidad, Editar, búsqueda y unidades de prueba inactivas.
+
+## Entrega 010 de catálogo preparada
+
+Primer bloque de Invitados (requisito 10.1). Añade modelos.publico con valor
+inicial 0 y publicación explícita por administrador. No publica registros
+existentes durante la migración. POST /admin/modelos/{id}/publicacion recibe
+publico; POST /admin/unidades/{id}/exhibicion recibe habilitada. Esta última
+exige unidad activa sin propietario y modelo activo publicado. Conserva los
+historiales y registra ambas operaciones junto con la auditoría en transacción.
+La configuración de exhibición se rechaza durante una demo en ejecución.
+
+GET /catalogo es anónimo y paginado. Sólo devuelve id_modelo, nombre,
+descripcion y unidades_exhibicion de modelos activos publicados. Su conteo
+excluye unidades inactivas, estados distintos a EXHIBICION y cualquier unidad
+con asignación vigente, incluso si su estado comercial fuera inconsistente.
+El conteo representa inventario comercial; no confirma hardware conectado ni
+reservas disponibles. El esquema Pydantic evita filtrar columnas privadas.
+
+La interfaz incorpora Explorar catálogo público en Mi cuenta, Publicar/Retirar
+en Modelos y Usar/Retirar exhibición en unidades activas sin propietario.
+El catálogo permite navegar páginas y avisa que las pruebas de control todavía
+no están disponibles. Las reservas exclusivas, los tokens temporales, el reloj,
+comandos limitados, soporte y detención por caducidad continúan pendientes.
+La unidad 1 permanece asignada al comprador; no se cambia su clasificación.
+
+53 pruebas locales pasaron. Incluyen contrato público sin campos privados,
+permisos, sanitización de errores, paginación y ejecución del SELECT real del
+catálogo sobre una base SQLite desechable para comprobar filtros. Esto no
+verifica instalación de procedimientos ni bloqueos de MySQL. La migración
+010 y probar_catalogo_http.py requieren ejecución real en la copia de RDS.
+El script crea un modelo y una unidad nuevos, comprueba publicación/retiro,
+conteos, rechazo de exhibición privada/asignada y auditoría. Comprueba que la
+unidad 1 sigue asignada antes de intentar la operación que debe rechazarse,
+y que el inventario de esa unidad permanece idéntico después. No envía
+movimientos. Los registros nuevos quedan privados e inactivos al finalizar.
+
+Recuperación ante DDL parcial: conservar el informe y revisar la existencia
+de modelos.publico y de las nuevas rutinas antes de repetir el SQL. El backend
+y frontend anteriores pueden restaurarse conservando la columna adicional;
+el listado administrativo previo está definido en 003. No eliminar registros
+ni volver a ejecutar migraciones anteriores completas. El despliegue público
+de esta ampliación continúa pendiente de completar el flujo de Invitados.

@@ -4,14 +4,19 @@ import runpy
 import zipfile
 
 
-def main():
-    root = Path(__file__).resolve().parents[1]
-    runpy.run_path(str(root / "tools/empaquetar_frontend_prueba.py"), run_name="__main__")
+def build_backend(root):
     backend_target = root.parent / "backend_4_3_prueba.zip"
     with zipfile.ZipFile(backend_target, "w", zipfile.ZIP_DEFLATED) as archive:
         for path in sorted((root / "backend").rglob("*")):
             if path.is_file() and (path.suffix == ".py" or path.name in {"requirements.txt", "README.md"}):
                 archive.write(path, path.relative_to(root / "backend").as_posix())
+    return backend_target
+
+
+def main():
+    root = Path(__file__).resolve().parents[1]
+    runpy.run_path(str(root / "tools/empaquetar_frontend_prueba.py"), run_name="__main__")
+    backend_target = build_backend(root)
     target = root.parent / "entrega_009_inventario.zip"
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
         archive.write(root / "sql/migrations/009_inventario_unidades.up.sql", "009_inventario_unidades.up.sql")

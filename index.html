@@ -180,6 +180,8 @@
         <section id="view-admin" class="app-view account-view" aria-labelledby="tab-admin" hidden>
           <div class="account-heading"><div><h2 id="account-title">Mi cuenta</h2><p id="account-user">Inicia sesión para administrar tus vehículos.</p></div><button type="button" id="account-logout" class="presentation-button" hidden>Cerrar sesión</button></div>
           <p id="account-message" role="status" aria-live="polite"></p>
+          <button type="button" id="account-catalog" hidden>Explorar catálogo público</button>
+          <section id="public-catalog" class="panel account-panel" hidden aria-label="Catálogo público"></section>
           <form id="account-login" class="panel account-login">
             <h3>Iniciar sesión</h3>
             <label>Correo<input name="correo" type="email" required autocomplete="username"></label>

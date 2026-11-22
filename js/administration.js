@@ -162,8 +162,15 @@ async function showModels() {
     });
   };
   section.append(button('Nuevo modelo', () => edit()), editor);
-  table(section, [['id_modelo', 'ID'], ['nombre', 'Modelo'], ['descripcion', 'Descripción'], ['activo', 'Activo']],
-    data.modelos, (record, cell) => cell.append(button('Editar', () => edit(record))));
+  table(section, [['id_modelo', 'ID'], ['nombre', 'Modelo'], ['descripcion', 'Descripción'], ['activo', 'Activo'], ['publico', 'Público']],
+    data.modelos, (record, cell) => {
+      cell.append(button('Editar', () => edit(record)));
+      if (record.activo || record.publico) cell.append(button(record.publico ? 'Retirar del catálogo' : 'Publicar en catálogo', async () => {
+        await fetchData('/admin/modelos/' + record.id_modelo + '/publicacion',
+          { method: 'POST', body: { publico: !record.publico } });
+        await showModels();
+      }));
+    });
 }
 
 async function showClients() {
@@ -242,7 +249,12 @@ async function showUnits() {
       });
     }));
     if (!unit.id_propietario && unit.activo) cell.append(button('Controlar', () => selectForControl(unit)),
-      button('Demos', () => showDemos(unit.id_vehiculo)));
+      button('Demos', () => showDemos(unit.id_vehiculo)),
+      button(unit.estado_comercial === 'EXHIBICION' ? 'Retirar exhibición' : 'Usar en exhibición', async () => {
+        await fetchData('/admin/unidades/' + unit.id_vehiculo + '/exhibicion',
+          { method: 'POST', body: { habilitada: unit.estado_comercial !== 'EXHIBICION' } });
+        await showUnits();
+      }));
   });
   search.addEventListener('input', () => {
     const term = search.value.trim().toLocaleLowerCase('es');
@@ -361,6 +373,24 @@ function demoEditor(vehicleId, commands, detail) {
   for (const step of detail?.pasos || [{}]) addStep(step);
 }
 
+let catalogVersion = 0;
+async function showPublicCatalog(offset = 0) {
+  const version = ++catalogVersion;
+  const host = $('#public-catalog');
+  host.hidden = false;
+  host.replaceChildren(node('p', 'Consultando catálogo…'));
+  const data = await fetchData('/catalogo?limite=20&offset=' + offset);
+  if (version !== catalogVersion) return;
+  host.replaceChildren(node('h3', 'Prueba nuestros vehículos IoT'));
+  host.append(node('p', 'Modelos publicados por la empresa. Las pruebas de control todavía no están disponibles.'));
+  table(host, [['nombre', 'Modelo'], ['descripcion', 'Descripción'], ['unidades_exhibicion', 'Unidades de exhibición']], data.modelos);
+  const navigation = node('div', undefined, 'account-actions');
+  if (offset > 0) navigation.append(button('Página anterior', () => showPublicCatalog(Math.max(0, offset - 20))));
+  if (data.modelos.length === 20) navigation.append(button('Página siguiente', () => showPublicCatalog(offset + 20)));
+  navigation.append(button('Cerrar catálogo', () => { catalogVersion++; host.hidden = true; }));
+  host.append(navigation);
+}
+
 function showIdentity() {
   screenVersion++;
   workspace.replaceChildren();
@@ -381,6 +411,8 @@ function showIdentity() {
 }
 
 if (config.sessionAuth) {
+  $('#account-catalog').hidden = false;
+  $('#account-catalog').addEventListener('click', () => run(() => showPublicCatalog()));
   $('#control-account').hidden = false;
   $('#control-account').addEventListener('click', () => $('#tab-admin').click());
   $('#tab-admin').hidden = false;
