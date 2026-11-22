@@ -819,3 +819,55 @@ navegación y se repitió correctamente el recorrido. La renovación de 10 s
 mantuvo el estado autorizado durante las comprobaciones. No es prueba en
 RDS del nuevo frontend ni prueba de hardware; falta confirmación del usuario.
 El ZIP frontend_4_3_prueba.zip contiene esta integración para localhost8001.
+
+## Soporte operativo consentido (SQL016 / entrega 017)
+
+El usuario confirmó mediante capturas autorización/liberación del comprador
+y regreso desde Monitoreo con reserva liberada; se registra validado ese
+recorrido del frontend en Windows/RDS. La hora mostrada se etiqueta como
+Ciudad de México independientemente del reloj de la máquina remota.
+
+Nueva propuesta: permisos_soporte.operativo inicia en 0 para TODOS los
+permisos anteriores. Consent.operativo es false por defecto. El dueño debe
+conceder explícitamente operativo=true a un administrador concreto por
+1–30 minutos. La autorización permite únicamente movimiento manual mediante
+reserva/canal exclusivos; no acceso a demos privadas, edición o asignación.
+Un permiso de diagnóstico no se convierte implícitamente en operativo.
+
+sesiones_control.id_permiso enlaza el permiso operativo y su asignación
+vigente. Se reutiliza la PK de reservas_control para excluir comprador,
+soporte e Invitado. La vigencia y cada renovación quedan limitadas por el
+mínimo entre 45 s, caducidad de cuenta y de permiso. Reautorizar produce un
+permiso nuevo: no resucita una reserva ligada al anterior. Revocación,
+caducidad o inactividad de dueño/administrador invalidan SQL; worker/canal
+cierran con DETENER mediante el protocolo existente. La reserva del dueño
+no puede ser desplazada por soporte ni viceversa. El dueño conserva consulta
+y capacidad de revocar. Auditoría distingue RESERVAR/CERRAR/LIBERAR_SOPORTE
+y AUTORIZAR_SOPORTE_OPERATIVO, además de los eventos anteriores.
+
+016 altera columnas y reemplaza sólo las rutinas de control introducidas en
+014, más la consulta de permisos de soporte. Las 21 originales no cambian.
+No añade triggers ni amplía privilegios de iot_api. Requiere CERRAR reservas
+y DETENER backend antes del DDL. El ejecutor rechaza reservas existentes;
+DDL puede quedar parcial, por lo que un error exige revisar informe antes
+de repetir. Reversión conservadora: cerrar reservas, revocar permisos
+operativos y volver al backend anterior conservando columnas e historial.
+
+Validación local: 105 unitarias, 54 SQL de comprador/Invitado correctas;
+casos SQL adicionales verifican administrador destinatario, diagnóstico sin
+escalamiento, límite temporal, renovación rechazada al vencer y no revivir
+la reserva anterior con un permiso nuevo (ROLLBACK de fixtures). La prueba
+real HTTP/WS en MariaDB desechable pasó 47 comprobaciones: consentimiento,
+exclusión mutua, movimientos manuales, rechazo de demo privada, revocación,
+recuperación del dueño, desconexión y caducidad real de un minuto AUN con
+renovación continua de WS. Informe local soporte_operativo_c2b1699d830c.json.
+También pasó la regresión HTTP/WS de soporte de diagnóstico anterior
+(soporte_http_857a0a26dd99.json). No es prueba en RDS ni de hardware.
+
+Paquete entrega_017_soporte_operativo.zip: SQL016, ejecutor, backend y
+probar_soporte_operativo_http.py. La prueba pide sólo administrador de app,
+crea comprador y unidad NUEVOS sin hardware y conserva su historial privado;
+el comprador de prueba se desactiva al terminar. No mueve la unidad 1.
+Pendiente validar SQL/API sobre copia RDS y posteriormente añadir la interfaz
+para consentimiento y adquisición de soporte. El frontend del comprador
+actual sigue siendo compatible; no se publica esta etapa en Pages.

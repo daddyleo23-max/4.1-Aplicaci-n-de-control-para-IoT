@@ -31,11 +31,15 @@ def resource_context(kind, identifier):
     return rows[0]
 
 
-def check_unit_access(session, unit, inventory=False, diagnostic=False):
+def check_unit_access(session, unit, inventory=False, diagnostic=False, operational=False):
     if session["rol"] == "ADMINISTRADOR":
         if inventory:
             return
         if unit["id_propietario"] is None and unit["activo"]:
+            return
+        if operational and unit["activo"] and service.ejecutar_consulta(
+            "sp_soporte_operar_acceso", (session["id_usuario"], unit["id_vehiculo"]),
+        ):
             return
         if diagnostic and unit["activo"] and service.ejecutar_consulta(
             "sp_soporte_acceso", (session["id_usuario"], unit["id_vehiculo"]),
@@ -97,7 +101,10 @@ async def authorize_resources(
         if expected_unit is not None and unit["id_vehiculo"] != expected_unit:
             raise HTTPException(403, "Los recursos pertenecen a unidades diferentes.")
         expected_unit = unit["id_vehiculo"]
+        if is_admin and write and route == "/vehiculos/{id_vehiculo}/movimientos" and unit['id_propietario'] is not None:
+            request.state.support_operation = True
         check_unit_access(session, unit, inventory=inventory_route or admin_write,
+                          operational=write and route == "/vehiculos/{id_vehiculo}/movimientos",
                           diagnostic=request.method == "GET" and route in {
                               "/vehiculos/{id_vehiculo}/estado", "/vehiculos/{id_vehiculo}/historial",
                               "/vehiculos/{id_vehiculo}/comandos",

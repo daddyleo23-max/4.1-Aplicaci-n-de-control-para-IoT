@@ -56,8 +56,8 @@ class ControlService:
         await self.publish(row)
 
     async def reserve(self, session, unit):
-        if session['rol'] != 'USUARIO':
-            raise HTTPException(403, 'La reserva requiere una cuenta de comprador propietaria.')
+        if session['rol'] not in ('USUARIO','ADMINISTRADOR'):
+            raise HTTPException(403, 'La reserva requiere un comprador propietario o soporte autorizado.')
         if not self.ready:
             raise HTTPException(503, 'Se están recuperando las reservas de control.')
         async def create():
@@ -197,7 +197,7 @@ class ControlService:
             except asyncio.CancelledError:
                 raise
             except Exception:
-                logger.warning('Una reserva de comprador sigue bloqueada; se reintentará su parada.')
+                logger.warning('Una reserva operativa sigue bloqueada; se reintentará su parada.')
             await asyncio.sleep(1)
 
     async def shutdown(self):

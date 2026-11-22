@@ -22,7 +22,7 @@ async def registrar_movimiento(
 ):
     from app.resource_security import sessions_enabled
     from app.services.demo_service import demo_service
-    if sessions_enabled() and request.state.session['rol'] == 'USUARIO':
+    if sessions_enabled() and (request.state.session['rol'] == 'USUARIO' or getattr(request.state, 'support_operation', False)):
         from app.services.control_service import control_service
         return await control_service.move(request.state.session,id_vehiculo,movimiento.id_comando)
     if sessions_enabled():

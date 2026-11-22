@@ -23,7 +23,7 @@ def enabled():
 async def status(response: Response, id_vehiculo: int = Path(gt=0), session: dict = Depends(require_session)):
     response.headers['Cache-Control']='no-store'
     unit = await asyncio.to_thread(resource_context,'vehiculo',id_vehiculo)
-    check_unit_access(session,unit)
+    check_unit_access(session,unit,operational=True)
     rows = await control_service.db('sp_control_reservas')
     row = next((r for r in rows if r['id_vehiculo']==id_vehiculo),None)
     own = bool(row and row['id_sesion']==session['id_sesion'])
@@ -36,7 +36,7 @@ async def status(response: Response, id_vehiculo: int = Path(gt=0), session: dic
 async def reserve(response: Response, id_vehiculo: int = Path(gt=0), session: dict = Depends(require_session)):
     response.headers['Cache-Control']='no-store'
     unit = await asyncio.to_thread(resource_context,'vehiculo',id_vehiculo)
-    check_unit_access(session,unit)
+    check_unit_access(session,unit,operational=True)
     return await control_service.reserve(session,id_vehiculo)
 
 

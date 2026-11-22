@@ -138,8 +138,9 @@ def main():
     migrations["013_soporte_diagnostico.up.sql"] = ("013", TABLES_011)
     migrations["014_reservas_comprador.up.sql"] = ("014", TABLES_011 | {"permisos_soporte"})
     migrations["015_api_control_comprador.up.sql"] = ("015", TABLES_011 | {"permisos_soporte", "sesiones_control"})
+    migrations["016_soporte_operativo.up.sql"] = ("016", TABLES_011 | {"permisos_soporte", "sesiones_control"})
     if sql.name not in migrations:
-        raise SystemExit("Este ejecutor admite las migraciones 001 a 015.")
+        raise SystemExit("Este ejecutor admite las migraciones 001 a 016.")
     version, expected_tables = migrations[sql.name]
     root = Path.cwd()
     sys.path.insert(0, str(root))
@@ -175,6 +176,10 @@ def main():
                 ]
                 if [row["version"] for row in cursor.fetchall()] != expected_versions:
                     raise SystemExit("La copia no tiene las migraciones previas esperadas.")
+            if version == "016":
+                cursor.execute("SELECT COUNT(*) AS n FROM reservas_control")
+                if cursor.fetchone()["n"]:
+                    raise SystemExit("Cierra todas las reservas desde la aplicación antes de aplicar 016.")
             before = snapshot(cursor, args.copia)
         report = {"copia": args.copia, "antes": before,
                   "archivo_sql": sql.name, "sql_sha256": hashlib.sha256(sql.read_bytes()).hexdigest()}

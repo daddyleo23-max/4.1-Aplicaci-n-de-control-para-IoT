@@ -39,3 +39,31 @@ class SupportTests(unittest.TestCase):
             for actor in (self.admin, {'rol': 'USUARIO', 'id_usuario': 6}):
                 with self.assertRaises(HTTPException):
                     owner(actor, 1)
+
+    def test_operational_permission_is_a_separate_query(self):
+        def query(name,args):
+            return [{'id_permiso':1}] if name=='sp_soporte_acceso' else []
+        with patch('app.resource_security.service.ejecutar_consulta',side_effect=query):
+            check_unit_access(self.admin,self.unit,diagnostic=True)
+            with self.assertRaises(HTTPException):
+                check_unit_access(self.admin,self.unit,operational=True)
+
+    def test_operational_permission_does_not_grant_generic_access(self):
+        with patch('app.resource_security.service.ejecutar_consulta',return_value=[{'id_permiso':1}]):
+            check_unit_access(self.admin,self.unit,operational=True)
+            with self.assertRaises(HTTPException):
+                check_unit_access(self.admin,self.unit)
+
+    def test_default_consent_keeps_diagnostic_scope(self):
+        from app.routers.soporte import Consent,grant
+        with patch('app.routers.soporte.owner'),patch('app.routers.soporte.write',return_value=[{'id_permiso':7}]) as write:
+            result=grant(Consent(id_administrador=4,minutos=1),1,{'id_usuario':5})
+            self.assertEqual(result['alcance'],'MONITOREO')
+            self.assertEqual(write.call_args.args[0],'sp_soporte_conceder')
+
+    def test_operational_consent_requires_explicit_flag(self):
+        from app.routers.soporte import Consent,grant
+        with patch('app.routers.soporte.owner'),patch('app.routers.soporte.write',return_value=[{'id_permiso':7}]) as write:
+            result=grant(Consent(id_administrador=4,minutos=1,operativo=True),1,{'id_usuario':5})
+            self.assertEqual(result['alcance'],'OPERATIVO')
+            self.assertEqual(write.call_args.args[0],'sp_soporte_conceder_operativo')

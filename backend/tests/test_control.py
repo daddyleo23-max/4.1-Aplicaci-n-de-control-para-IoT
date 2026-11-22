@@ -31,9 +31,9 @@ class ControlTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(HTTPException):
             await self.service.lease({**SESSION,'id_sesion':6},7)
 
-    async def test_admin_cannot_reserve(self):
+    async def test_unknown_role_cannot_reserve(self):
         with self.assertRaises(HTTPException):
-            await self.service.reserve({**SESSION,'rol':'ADMINISTRADOR'},7)
+            await self.service.reserve({**SESSION,'rol':'INVITADO'},7)
         self.service.db.assert_not_awaited()
 
     async def test_recovery_blocks_new_reservations(self):

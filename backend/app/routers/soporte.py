@@ -1,4 +1,4 @@
-"""Consentimiento del comprador para diagnóstico temporal, sin movimientos."""
+"""Consentimiento del comprador para diagnóstico o soporte operativo temporal."""
 from fastapi import APIRouter, Depends, HTTPException, Path
 from pydantic import BaseModel, ConfigDict, Field
 import pymysql
@@ -6,7 +6,7 @@ from app.session_security import require_session
 from app.resource_security import resource_context
 from app.services.procedimiento_service import ProcedimientoService
 
-router = APIRouter(tags=['Soporte de diagnóstico 4.3'])
+router = APIRouter(tags=['Soporte autorizado 4.3'])
 service = ProcedimientoService()
 
 
@@ -14,6 +14,7 @@ class Consent(BaseModel):
     model_config = ConfigDict(extra='forbid')
     id_administrador: int = Field(gt=0)
     minutos: int = Field(ge=1, le=30)
+    operativo: bool = False
 
 
 def owner(session, unit_id):
@@ -34,8 +35,10 @@ def write(procedure, args):
 @router.post('/vehiculos/{id_vehiculo}/soporte', status_code=201)
 def grant(data: Consent, id_vehiculo: int = Path(gt=0), session: dict = Depends(require_session)):
     owner(session, id_vehiculo)
-    rows = write('sp_soporte_conceder', (session['id_usuario'], id_vehiculo, data.id_administrador, data.minutos))
-    return {**rows[0], 'alcance': 'MONITOREO', 'mensaje': 'Diagnóstico autorizado; no permite enviar movimientos ni ejecutar demos.'}
+    rows = write('sp_soporte_conceder_operativo' if data.operativo else 'sp_soporte_conceder', (session['id_usuario'], id_vehiculo, data.id_administrador, data.minutos))
+    return {**rows[0], 'alcance': 'OPERATIVO' if data.operativo else 'MONITOREO',
+            'mensaje': 'Movimientos manuales mediante reserva exclusiva; sin acceso a demos privadas.' if data.operativo
+                       else 'Diagnóstico autorizado; no permite enviar movimientos ni ejecutar demos.'}
 
 
 @router.get('/vehiculos/{id_vehiculo}/soporte')
