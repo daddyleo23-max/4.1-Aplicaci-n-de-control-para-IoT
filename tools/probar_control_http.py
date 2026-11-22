@@ -67,6 +67,7 @@ def main():
         report.update(id_modelo=model,id_unidad=unit)
         record('Unidad nueva distinta del montacargas 1',unit!=1)
         for name,number in [('DETENER',13),('ADELANTE',1)]:
+            check('Capacidad de prueba '+name,201,'POST',f'/admin/modelos/{model}/capacidades',{'nombre':name,'codigo':number},admin)
             check('Crear comando '+name,201,'POST',f'/vehiculos/{unit}/comandos',{'nombre':name,'codigo':number},admin)
         commands=check('Catálogo unidad nueva',200,'GET',f'/vehiculos/{unit}/comandos',token=admin)['comandos']
         ids={c['nombre']:c['id_comando'] for c in commands}

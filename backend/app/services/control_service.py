@@ -38,13 +38,13 @@ class ControlService:
         self.awaiting = {}
         self.closures = {}
 
-    async def db(self, name, args=(), write=False):
+    async def db(self, name, args=(), write=False, guards=()):
         method = self.repository.ejecutar_consulta_transaccional if write else self.repository.ejecutar_consulta
         try:
-            return await asyncio.to_thread(method, name, args)
+            return await asyncio.to_thread(method, name, args, precondiciones=guards) if guards else await asyncio.to_thread(method, name, args)
         except pymysql.MySQLError as error:
             if error.args[0] in (1644, 1062, 1205, 1213):
-                raise HTTPException(409, 'Reserva incompatible, vencida o en proceso de cierre.') from error
+                raise HTTPException(409, 'Reserva o comando incompatible con la unidad y su modelo.') from error
             raise HTTPException(503, 'No se pudo consultar el servicio de control.') from error
 
     async def publish(self, row):
@@ -157,7 +157,8 @@ class ControlService:
                         demo = running
                     else:
                         # Revalidar en SQL dentro de la misma transacción del movimiento.
-                        row = (await self.db('sp_control_mover',(control,session['id_sesion'],unit,command_id),True))[0]
+                        row = (await self.db('sp_control_mover',(control,session['id_sesion'],unit,command_id),True,
+                            guards=[] if command['nombre']=='DETENER' else [('sp_capacidad_exigir',(unit,command_id))]))[0]
                         await self.publish(row)
                         return {'mensaje':'Movimiento registrado correctamente.',**row}
                 if demo:

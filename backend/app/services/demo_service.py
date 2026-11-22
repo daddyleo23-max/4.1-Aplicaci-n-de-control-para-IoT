@@ -57,12 +57,16 @@ class DemoService:
             from app.resource_security import sessions_enabled
             if sessions_enabled():
                 import pymysql
+                commands = await asyncio.to_thread(self.servicio.ejecutar_consulta, 'sp_obtener_comandos_vehiculo', (id_vehiculo,))
+                if not any(c['nombre'] == 'DETENER' and c['activo'] for c in commands):
+                    raise HTTPException(409, 'Configura DETENER activo antes de ejecutar demos.')
                 try:
                     await asyncio.to_thread(self.servicio.ejecutar_transaccion,
-                                            [("sp_control_exigir", control)] if control else [("sp_reserva_exigir_libre", (id_vehiculo,))])
+                                            ([("sp_control_exigir", control)] if control else [("sp_reserva_exigir_libre", (id_vehiculo,))]) +
+                                            [("sp_capacidad_exigir", (id_vehiculo, step["id_comando"])) for step in movimientos])
                 except pymysql.MySQLError as error:
                     if error.args[0] in (1644, 1205, 1213):
-                        raise HTTPException(409, "La unidad tiene una reserva activa.") from error
+                        raise HTTPException(409, "La demo contiene comandos deshabilitados o la unidad tiene una reserva incompatible.") from error
                     raise
 
             tarea = asyncio.create_task(
@@ -110,9 +114,12 @@ class DemoService:
             for movimiento in movimientos:
                 # Usar una transacción para confirmar el cambio de estado.
                 from app.services.control_service import complete
+                from app.resource_security import sessions_enabled
                 await complete(asyncio.to_thread(
                     self.servicio.ejecutar_transaccion,
-                    ([("sp_control_exigir", control)] if control else []) + [(
+                    ([("sp_control_exigir", control)] if control else []) +
+                    ([("sp_capacidad_exigir", (id_vehiculo, movimiento["id_comando"]))]
+                     if sessions_enabled() and movimiento['comando'] != 'DETENER' else []) + [(
                         "sp_actualizar_estado",
                         (
                             id_vehiculo,

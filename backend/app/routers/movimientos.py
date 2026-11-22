@@ -79,6 +79,12 @@ async def _registrar_movimiento(id_vehiculo, movimiento):
                 detail="El comando está inactivo.",
             )
 
+        from app.resource_security import sessions_enabled
+        if sessions_enabled() and comando['nombre'] != 'DETENER' and not any(
+            c['nombre'] == 'DETENER' and c['activo'] for c in comandos
+        ):
+            raise HTTPException(409, 'Configura DETENER activo antes de operar esta unidad.')
+
         # 3. No iniciar una demo desde el endpoint individual.
         if comando["nombre"] == "DEMO":
             raise HTTPException(
@@ -97,7 +103,7 @@ async def _registrar_movimiento(id_vehiculo, movimiento):
         # 5. Actualizar estado e historial en una transacción.
         from app.resource_security import sessions_enabled
         guard = [("sp_reserva_exigir_libre", (id_vehiculo,))] if sessions_enabled() else []
-        servicio.ejecutar_transaccion(guard + [
+        servicio.ejecutar_transaccion(guard + ([("sp_capacidad_exigir", (id_vehiculo, movimiento.id_comando))] if sessions_enabled() and comando["nombre"] != "DETENER" else []) + [
             (
                 "sp_actualizar_estado",
                 (id_vehiculo, movimiento.id_comando, conectado),
@@ -132,7 +138,7 @@ async def _registrar_movimiento(id_vehiculo, movimiento):
 
     except pymysql.MySQLError as error:
         if error.args[0] in (1644, 1205, 1213):
-            raise HTTPException(409, "La unidad tiene otra operación o reserva activa.") from error
+            raise HTTPException(409, "La unidad tiene una reserva activa o el comando no está habilitado para su modelo.") from error
         print(f"Error de MySQL al registrar movimiento: {error}")
         raise HTTPException(
             status_code=503,

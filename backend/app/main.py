@@ -19,6 +19,7 @@ from app.routers.catalogo import router as catalogo_router
 from app.routers.invitados import router as invitados_router
 from app.routers.soporte import router as soporte_router
 from app.routers.control import router as control_router
+from app.routers.capacidades import router as capacidades_router
 from app.services.control_service import control_service
 from app.services.guest_service import guest_service
 from app.resource_security import authorize_resources, sessions_enabled
@@ -91,6 +92,7 @@ app.include_router(catalogo_router)
 app.include_router(invitados_router)
 app.include_router(soporte_router)
 app.include_router(control_router)
+app.include_router(capacidades_router)
 
 
 @app.get("/health/db")

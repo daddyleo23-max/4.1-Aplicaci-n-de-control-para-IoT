@@ -64,6 +64,7 @@ def execute(admin, report, save, retire=False):
         raise RuntimeError('Se esperaba una unidad nueva distinta de la unidad 1; se detuvo la preparación.')
     ids = []
     for name, code in [('DETENER', 13), ('ADELANTE', 1)]:
+        check('POST', f'/admin/modelos/{model_id}/capacidades', {'nombre': name, 'codigo': code}, 201)
         check('POST', f'/vehiculos/{unit_id}/comandos',
               {'nombre': name, 'codigo': code, 'descripcion': 'Prueba web sin hardware'}, 201)
     rows = check('GET', f'/vehiculos/{unit_id}/comandos')['comandos']

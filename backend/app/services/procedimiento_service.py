@@ -4,11 +4,15 @@ from app.database import get_connection
 
 class ProcedimientoService:
 
-    def ejecutar_consulta_transaccional(self, procedimiento, parametros=()):
+    def ejecutar_consulta_transaccional(self, procedimiento, parametros=(), precondiciones=()):
         """Persistir una operación que también devuelve un resultado."""
         connection = get_connection()
         try:
             with connection.cursor() as cursor:
+                for guardia, argumentos in precondiciones:
+                    cursor.execute(f"CALL {guardia}({', '.join(['%s'] * len(argumentos))})", argumentos)
+                    while cursor.nextset():
+                        pass
                 consulta = f"CALL {procedimiento}({', '.join(['%s'] * len(parametros))})"
                 cursor.execute(consulta, parametros)
                 resultados = cursor.fetchall()

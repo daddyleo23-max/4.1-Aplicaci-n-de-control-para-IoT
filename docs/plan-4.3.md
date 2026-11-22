@@ -941,3 +941,60 @@ queda pendiente de validar por el usuario. El ZIP incluye SQL018, ejecutor
 actualizado y probar_capacidades_sql.py. No necesita cambiar backend/frontend
 en esta etapa. La integración de la validación en rutas de ejecución y de
 los formularios administrativos sigue pendiente tras aprobar la base SQL.
+
+## Capacidades integradas en API e interfaz (entrega020, sin SQL adicional)
+
+El usuario aplicó SQL018 con MySQL0 y conservación=True y completó las 21
+comprobaciones en RDS. Informe capacidades_sql_20261122-074833-023062.json;
+fixtures revertidas. El intento previo con correo de app como cuenta RDS
+no llegó a ejecutar la prueba; con admin se completó correctamente.
+
+Nuevo router capacidades: GET/POST capacidades de modelo, actualización por
+modelo/capacidad, GET/POST comandos de unidad y actualización por unidad/ID.
+Sólo require_admin, esquemas con nombre60/descripcion255, código1–65535 y
+funciones MAYÚSCULAS. Reutiliza exclusivamente SP018. La edición se coordina
+con el mismo bloqueo de demos y espera SQL aunque se cancele su await.
+No requiere nueva migración ni alterar los SP originales.
+
+Las rutas anteriores de creación/actualización de comandos conservan el
+cuerpo y respuesta, pero en modo sesiones guardan mediante la validación
+018 y auditoría: requieren que la capacidad ya exista en el modelo. No se
+puede eludir la capacidad mediante las rutas anteriores. El modo legacy
+API key conserva su comportamiento. Las fixtures que crean modelos nuevos
+se actualizaron para registrar sus capacidades antes de agregar comandos.
+No usar scripts antiguos contra este backend para crear esas fixtures.
+
+El catálogo REST en modo sesiones informa compatibilidad y sólo activa
+funciones admitidas; mantiene IDs y campos previos. Los movimientos de
+comprador/soporte, el pulso Invitado y el movimiento administrativo añaden
+sp_capacidad_exigir en la MISMA transacción SQL de escritura. El editor de
+demos valida sus pasos al guardar, el inicio comprueba todos antes de crear
+la tarea y cada paso se vuelve a comprobar. La ausencia de DETENER activo
+bloquea nuevas operaciones manuales/demos; las solicitudes de DETENER
+conservan prioridad y no se bloquean por falta de metadatos de capacidad.
+La coordinación mantiene un único proceso Uvicorn. La BD no sustituye el
+watchdog ni demuestra capacidades físicas del firmware.
+
+Interfaz: Modelos → Capacidades (alta, descripción, habilitación, identidad
+usada protegida) y Unidades → Comandos (alta desde capacidad, descripción,
+habilitación, compatibilidad e ID visible). No ofrece cambio de identidad
+de comando existente ni borrado físico. Modelos inactivos muestran su lista
+sin formulario de edición. Se conserva el resto de Control/Monitoreo.
+
+Validación: 116 unitarias, incluidas guardas transaccionales con rollback,
+permisos de administración y rechazo sin DETENER. Prueba HTTP local real
+sobre modelos/unidad nuevos sin hardware: capacidades_http_04ce1ad385a1.json;
+registros privados e inactivos al terminar. Verificó incompatibilidad,
+protección de códigos/DETENER, desactivación, rechazo de ejecución/editor/
+demo almacenada, reactivación y conservación de IDs. También pasaron los
+recorridos HTTP/WSS actualizados de comprador (control_http_eada36e768bb.json)
+y de Invitado (http_invitados_6924f34e435c.json), incluida caducidad real.
+Comprobación en navegador local: lectura/edición/persistencia de capacidad y
+comando sobre fixture local, manteniendo ID y código. Falta verificar este
+backend/frontend en Windows/RDS. No equivale a prueba de hardware.
+
+Paquete entrega_020_capacidades_web.zip incluye backend completo, frontend
+para localhost8001 y probar_capacidades_http.py (pide admin de app, usa unidad
+NUEVA sin hardware y conserva pruebas privadas/inactivas). Primero actualizar
+backend y comprobar script; después actualizar frontend. Sin SQL adicional,
+sin secretos ni publicación en Pages todavía.

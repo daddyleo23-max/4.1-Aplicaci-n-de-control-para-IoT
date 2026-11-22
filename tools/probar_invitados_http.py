@@ -92,6 +92,7 @@ def main():
         if unit_id == 1:
             raise RuntimeError("La unidad de prueba no puede ser la unidad 1.")
         for command, code in (("DETENER", 13), ("ADELANTE", 1), ("POWER", 11)):
+            check("Capacidad de prueba " + command, 201, "POST", f"/admin/modelos/{model_id}/capacidades", {"nombre": command, "codigo": code}, admin)
             check("Registrar comando de prueba " + command, 201, "POST", f"/vehiculos/{unit_id}/comandos",
                   {"nombre": command, "codigo": code, "descripcion": "Prueba de API, sin hardware"}, admin)
         commands = check("Consultar comandos de prueba", 200, "GET", f"/vehiculos/{unit_id}/comandos", token=admin)["comandos"]

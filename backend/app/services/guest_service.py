@@ -27,18 +27,18 @@ class GuestService:
         self.creation_attempts = defaultdict(deque)
         self.command_attempts = defaultdict(deque)
 
-    def query(self, name, parameters=(), *, write=False):
+    def query(self, name, parameters=(), *, write=False, guards=()):
         try:
             method = (self.repository.ejecutar_consulta_transaccional if write
                       else self.repository.ejecutar_consulta)
-            return method(name, parameters)
+            return method(name, parameters, precondiciones=guards) if guards else method(name, parameters)
         except pymysql.MySQLError as error:
             if error.args[0] in (1644, 1062, 1213, 1205):
                 raise HTTPException(409, "La unidad está ocupada o la configuración no permite esta operación.") from error
             raise HTTPException(503, "El servicio de exhibición no está disponible temporalmente.") from error
 
-    async def db(self, name, parameters=(), *, write=False):
-        return await asyncio.to_thread(self.query, name, parameters, write=write)
+    async def db(self, name, parameters=(), *, write=False, guards=()):
+        return await asyncio.to_thread(self.query, name, parameters, write=write, guards=guards)
 
     def context(self, token, *, allow_closed=False):
         if not isinstance(token, str) or not 20 <= len(token) <= 200:
@@ -138,7 +138,8 @@ class GuestService:
             try:
                 async with demo_service.bloqueo:
                     try:
-                        row = (await self.db("sp_invitado_mover", (token_hash(token), command_id), write=True))[0]
+                        row = (await self.db("sp_invitado_mover", (token_hash(token), command_id), write=True,
+                            guards=[] if command['nombre']=='DETENER' else [('sp_capacidad_exigir',(context['id_vehiculo'],command_id))]))[0]
                         await self.publish(row)
                         if row["comando"] != "DETENER":
                             try:

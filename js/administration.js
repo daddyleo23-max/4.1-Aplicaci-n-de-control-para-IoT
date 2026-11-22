@@ -167,13 +167,76 @@ async function showModels() {
   section.append(button('Nuevo modelo', () => edit()), editor);
   table(section, [['id_modelo', 'ID'], ['nombre', 'Modelo'], ['descripcion', 'Descripción'], ['activo', 'Activo'], ['publico', 'Público']],
     data.modelos, (record, cell) => {
-      cell.append(button('Editar', () => edit(record)));
+      cell.append(button('Editar', () => edit(record)), button('Capacidades', () => showCapabilities(record)));
       if (record.activo || record.publico) cell.append(button(record.publico ? 'Retirar del catálogo' : 'Publicar en catálogo', async () => {
         await fetchData('/admin/modelos/' + record.id_modelo + '/publicacion',
           { method: 'POST', body: { publico: !record.publico } });
         await showModels();
       }));
     });
+}
+
+async function showCapabilities(model) {
+  const version = beginScreen();
+  const data = await fetchData(`/admin/modelos/${model.id_modelo}/capacidades`);
+  if (version !== screenVersion) return;
+  const section = panel('Capacidades · ' + model.nombre);
+  section.append(node('p', 'Configura únicamente funciones comprobadas en el hardware. Registrar una capacidad no añade esa función al firmware. Los nombres y códigos usados se conservan.'));
+  const editor = node('div');
+  const edit = (record = {}) => {
+    editor.replaceChildren();
+    form(editor, [
+      { name: 'nombre', label: 'Nombre de función (MAYÚSCULAS)', value: record.nombre, maxLength: 60 },
+      { name: 'codigo', label: 'Código del comando', type: 'number', value: record.codigo, min: 1, max: 65535 },
+      { name: 'descripcion', label: 'Descripción', value: record.descripcion, required: false, maxLength: 255 },
+      { name: 'activo', label: 'Estado de la capacidad', value: record.activo === 0 ? '0' : '1', options: [['1', 'Habilitada'], ['0', 'Deshabilitada']] },
+    ], record.id_capacidad ? 'Guardar capacidad' : 'Crear capacidad', async values => {
+      values.codigo = Number(values.codigo);
+      values.activo = values.activo === '1';
+      await fetchData(`/admin/modelos/${model.id_modelo}/capacidades` + (record.id_capacidad ? `/${record.id_capacidad}/actualizar` : ''),
+        { method: 'POST', body: values });
+      await showCapabilities(model);
+    });
+    editor.append(button('Cancelar edición', () => editor.replaceChildren()));
+  };
+  if (model.activo) section.append(button('Nueva capacidad', () => edit()));
+  else section.append(node('p', 'Modelo inactivo. Reactívalo desde Modelos para editar sus capacidades.'));
+  section.append(editor);
+  table(section, [['nombre', 'Función'], ['codigo', 'Código'], ['descripcion', 'Descripción'], ['activo', 'Habilitada']], data.capacidades,
+    (record, cell) => { if (model.activo) cell.append(button('Editar capacidad', () => edit(record))); });
+  section.append(button('Volver a modelos', showModels));
+}
+
+async function showUnitCommands(unit) {
+  const version = beginScreen();
+  const data = await fetchData(`/admin/unidades/${unit.id_vehiculo}/comandos`);
+  if (version !== screenVersion) return;
+  const section = panel('Comandos · ' + unit.nombre);
+  section.append(node('p', 'Cada comando usa una capacidad del modelo. La edición conserva su ID, nombre y código. DETENER debe permanecer habilitado mientras la unidad esté activa. Finaliza las reservas antes de editar.'));
+  const editor = node('div');
+  const edit = (record = {}) => {
+    editor.replaceChildren();
+    const existing = !!record.id_comando;
+    if (existing) editor.append(node('p', record.nombre + ' · código ' + record.codigo));
+    form(editor, [
+      ...(!existing ? [{ name: 'id_capacidad', label: 'Capacidad del modelo', options: data.capacidades.filter(c => c.activo).map(c => [c.id_capacidad, c.nombre + ' · ' + c.codigo]) }] : []),
+      { name: 'descripcion', label: 'Descripción del comando', value: record.descripcion, required: false, maxLength: 255 },
+      { name: 'activo', label: 'Estado del comando', value: record.activo === 0 ? '0' : '1', options: [['1', 'Habilitado'], ['0', 'Deshabilitado']] },
+    ], existing ? 'Guardar comando' : 'Agregar comando', async values => {
+      values.id_capacidad = existing ? record.id_capacidad : Number(values.id_capacidad);
+      values.activo = values.activo === '1';
+      await fetchData(`/admin/unidades/${unit.id_vehiculo}/comandos` + (existing ? `/${record.id_comando}/actualizar` : ''),
+        { method: 'POST', body: values });
+      await showUnitCommands(unit);
+    });
+    editor.append(button('Cancelar edición', () => editor.replaceChildren()));
+  };
+  if (data.capacidades.some(c => c.activo)) section.append(button('Nuevo comando', () => edit()));
+  else section.append(node('p', 'Configura primero las capacidades del modelo en Administración → Modelos.'));
+  section.append(editor);
+  table(section, [['id_comando', 'ID'], ['nombre', 'Función'], ['codigo', 'Código'], ['descripcion', 'Descripción'], ['activo', 'Habilitado'], ['compatible', 'Compatible']], data.comandos,
+    (record, cell) => { if (record.id_capacidad) cell.append(button('Editar comando', () => edit(record))); });
+  section.append(button('Volver a unidades', showUnits));
 }
 
 async function showClients() {
@@ -240,7 +303,7 @@ async function showUnits() {
   table(section, [['id_vehiculo', 'ID'], ['nombre', 'Unidad'], ['identificador_unidad', 'Identificador'],
     ['nombre_modelo', 'Modelo'], ['estado_comercial', 'Estado'], ['propietario', 'Propietario']],
   units.unidades, (unit, cell) => {
-    cell.append(button('Editar', () => editUnit(unit)));
+    cell.append(button('Editar', () => editUnit(unit)), button('Comandos', () => showUnitCommands(unit)));
     if (unit.activo && !unit.id_propietario && unit.estado_comercial === 'EXHIBICION') {
       cell.append(button('Configurar Invitado', () => showGuestConfiguration(unit)));
     }

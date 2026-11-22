@@ -58,7 +58,8 @@ def save_document(data, session, demo_id=None):
         json.dumps([step.model_dump() for step in data.pasos]),
     )
     try:
-        return service.ejecutar_consulta_transaccional("sp_editor_guardar_demo", parameters)[0]
+        return service.ejecutar_consulta_transaccional("sp_editor_guardar_demo", parameters,
+            precondiciones=[('sp_capacidad_exigir', (data.id_vehiculo, step.id_comando)) for step in data.pasos])[0]
     except pymysql.OperationalError as error:
         if error.args[0] == 1644:
             raise HTTPException(409, str(error.args[1])) from error
