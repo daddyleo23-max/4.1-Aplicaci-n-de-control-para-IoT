@@ -11,18 +11,26 @@ CSS, JavaScript modular, FastAPI, REST/WS y MySQL/RDS.
 
 ## Estado real
 
-La ampliación está validada sobre la copia aislada de RDS con migraciones
-001–020. El alumno confirmó recuperación019, migración020, 18 pruebas SQL y
-la prueba HTTP/WS de cierre completa (`cierre_4_3_3f0411c5de52.json`). El backend
-activo devuelve4.3.0 y el frontend muestra dashboard e inventario; el filtro
-MONT deja sólo MONT-001. **La publicación pública de4.3 y sus pruebas finales
-siguen pendientes**.
+**4.3 publicada en el hosting original y conectada a la API HTTPS de AWS.**
 
-[Hosting original](https://daddyleo23-max.github.io/4.1-Aplicaci-n-de-control-para-IoT/)
-todavía requiere completar el cambio de proxy y publicación. El `js/config.js`
-raíz está preparado con sesiones y API HTTPS pública; su publicación se coordina
-tras validar el proxy8002. Los ZIP de prueba apuntan a localhost8001 y no deben
-subirse a GitHub Pages.
+- [Aplicación pública](https://daddyleo23-max.github.io/4.1-Aplicaci-n-de-control-para-IoT/#cuenta)
+- [Swagger público](https://34.194.45.28/docs)
+- Backend4.3.0 en loopback8002, Caddy80/443 y esquema definitivo `vehiculo_iot_43` (MySQL8.4.9).
+
+Migraciones001–020, recuperación019, restauración íntegra y pruebas SQL/HTTP de
+la copia fueron aprobadas por el alumno. La versión publicada se comprobó en
+navegador: carga de módulos/asset, API y RDS disponibles, catálogo consultado
+sin errores de consola. También se verificaron CORS,401 sin sesión y rechazo
+WSS de un token inválido. [Evidencia pública](docs/verificacion-publica-4.3.md).
+
+**Pendientes de evaluación:** recorrido público autenticado REST/WSS,
+comprobación en teléfono físico y rondas P01–P17 con compañeros. Las pruebas
+anteriores en localhost no sustituyen esos escenarios. No se afirma ejecución
+física del vehículo por recibir eventos del servidor.
+
+El `js/config.js` raíz usa sesiones y API pública. Los ZIP de prueba apuntan a
+localhost8001 y no deben subirse a GitHub Pages. Mantener Caddy y el backend8002
+funcionando durante el uso público; el arranque actual es manual en Windows.
 
 ## Documentación y ejecución
 

@@ -100,3 +100,12 @@ aprobadas por el alumno. Backend4.3.0 y frontend actualizado confirmados;
 búsqueda MONT-001 deja una fila. Los pendientes de implementación anteriores
 quedan validados en la copia RDS. No implica promoción del esquema original,
 publicación, pruebas de teléfono público ni rondas con compañeros.
+
+
+## Actualización: frontend y API publicados
+
+GitHub Pages construido y versión4.3 accesible en el hosting original. API HTTPS
+4.3.0 conectada a vehiculo_iot_43 y catálogo comprobado desde navegador, sin
+errores de consola. CORS y rechazos anónimos REST/WSS comprobados. Los pendientes
+actuales son el recorrido público autenticado, teléfono físico, evidencias
+finales y rondas de compañeros; ver verificacion-publica-4.3.md.

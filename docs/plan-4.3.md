@@ -1168,3 +1168,21 @@ escritura parcial, y rechazo de archivo cambiado. No se presenta ese ensayo HTTP
 como validación públicaTLS/WSS. Se incluye prueba pública posterior sobre nuevas
 unidades de software. Pendientes: ejecutar gestor en Windows, publicar frontend,
 prueba pública real y rondas de compañeros.
+
+
+## Publicación efectiva tras renovar acceso GitHub
+
+El alumno confirmó Caddy activado en proxy_43_20261122-195400-899716 y backend8002
+con4.3.0/vehiculo_iot_43. Una pausa del laboratorio dejó API502 hasta volver a
+arrancar backend; después se verificó públicamente HTTPS4.3.0 y RDS8.4.9.
+La credencial GitHub dejó de ser válida durante la interrupción. El usuario
+completó reautorización web y se confirmó daddyleo23-max; no se solicitaron ni
+registraron contraseñas o tokens en el chat/repositorio.
+
+Push de los27 commits locales: origen8ed8083→a30fcee. GitHub Pages main/raíz
+confirmó built para a30fcee sin error. Se comprobó configuración pública de
+sesiones, interfaz/catálogo/asset desde navegador, API/RDS disponibles y consola
+sin errores. CORS de POST permitió el origen exacto; Administración anónima401 y
+WSS anónimo con token inválido cerró1008 sin filtrar estado. Evidencia pública en
+verificacion-publica-4.3.md. Pendientes: prueba pública autenticada, teléfono y
+rondas colaborativas. Publicar no equivale a práctica evaluada por completo.
