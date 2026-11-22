@@ -569,3 +569,13 @@ body.control-expanded{overflow:hidden}
   .account-view .account-section-picker select{font-weight:700;color:#ffcf5c;background:#202a21;border-color:#71602f}
   .account-view .account-menu{display:none}
 }
+
+/* La etiqueta larga conserva espacio dentro de la navegación lateral. */
+.page-wrap:has(#view-control:not([hidden])) .view-tab,
+.page-wrap:has(#view-monitor:not([hidden])) .view-tab{
+  flex:1 1 auto;
+  min-width:0;
+  padding-inline:8px;
+  letter-spacing:.05em;
+  white-space:nowrap;
+}
