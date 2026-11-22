@@ -219,3 +219,21 @@ Se preparó probar_admin_http.py para las comprobaciones de 006 por HTTP:
 crear/duplicar/desactivar modelo, crear/desactivar comprador, revocar su sesión
 y comprobar la auditoría. Crea registros de prueba identificables y los deja
 inactivos al completar exitosamente la secuencia. La ejecución está pendiente.
+El usuario ejecutó probar_admin_http.py y confirmó todas las comprobaciones,
+incluidas respuestas 201/409/200 en modelos, creación y desactivación del
+comprador, rechazo 403 en auditoría, revocación 401 y cuatro acciones
+persistidas en auditoría. Informe http_admin_d62c162e21b0.json.
+Se preparó probar_acceso_wss.py para completar la validación real de
+aislamiento REST/WSS y cierre del socket al revocar una sesión.
+El usuario compartió la ejecución correcta de probar_acceso_wss.py.
+Se verificaron cuentas distintas, propiedad de la unidad 1, lista vacía
+del segundo comprador, GET de estado/historial/comandos con 200 para dueño
+y 403 para Comprador B, WSS rechazado antes del estado para Comprador B,
+estado inicial WSS para dueño, logout y cierre del socket tras revocación.
+Informe prueba_wss_20261122-010410-849588.json.
+
+Siguiente bloque funcional: demos privadas con propietario, listado filtrado,
+editor de pasos compatible con comandos de la unidad y guardado atómico.
+La siguiente migración deberá preservar las dos demos existentes como demos
+de empresa, mantener los nueve pasos actuales y validar que la reasignación
+de un vehículo no exponga demos privadas de su propietario anterior.
