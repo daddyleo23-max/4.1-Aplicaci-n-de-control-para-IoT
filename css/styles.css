@@ -388,6 +388,13 @@ body.control-expanded{overflow:hidden}
 /* Administración conserva la paleta y se adapta sin reducir las tablas. */
 .account-view [hidden]{display:none!important}
 .account-return{display:none}
+.guest-capabilities{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:14px;padding:16px;border:1px solid #56605a;border-radius:10px}
+.account-view .guest-capabilities label{display:flex;align-items:center;gap:8px}
+.account-view .guest-capabilities input{width:20px;min-height:20px;height:20px;accent-color:#edb83d}
+.guest-countdown{font-size:24px;font-weight:700;color:#ffcf5c}
+.guest-commands{margin:18px 0}
+.account-view .guest-stop{background:#b83329;color:white;border-color:#f46a59}
+#guest-trial,#public-catalog{margin:20px 0}
 .account-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:20px 0}
 .account-heading h2{margin:0 0 8px;font-size:clamp(24px,3vw,34px)}
 .account-heading p{margin:0;color:var(--muted,#94a2a7)}

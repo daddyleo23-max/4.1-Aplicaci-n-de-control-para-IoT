@@ -1,6 +1,7 @@
 import { config, selectVehicle } from './config.js';
 import { request } from './api-client.js';
 import { currentUser, setAccountSession } from './account-session.js';
+import { reserveGuestTrial } from './guest-control.js';
 
 const $ = (selector) => document.querySelector(selector);
 const workspace = $('#account-workspace');
@@ -238,6 +239,9 @@ async function showUnits() {
     ['nombre_modelo', 'Modelo'], ['estado_comercial', 'Estado'], ['propietario', 'Propietario']],
   units.unidades, (unit, cell) => {
     cell.append(button('Editar', () => editUnit(unit)));
+    if (unit.activo && !unit.id_propietario && unit.estado_comercial === 'EXHIBICION') {
+      cell.append(button('Configurar Invitado', () => showGuestConfiguration(unit)));
+    }
     if (unit.activo) cell.append(button('Asignar', () => {
       editor.replaceChildren();
       form(editor, [{ name: 'id_usuario', label: 'Comprador', value: unit.id_propietario,
@@ -373,6 +377,58 @@ function demoEditor(vehicleId, commands, detail) {
   for (const step of detail?.pasos || [{}]) addStep(step);
 }
 
+async function showGuestConfiguration(unit) {
+  const version = beginScreen();
+  const [settings, catalog] = await Promise.all([
+    fetchData('/admin/unidades/' + unit.id_vehiculo + '/invitados'),
+    fetchData('/vehiculos/' + unit.id_vehiculo + '/comandos'),
+  ]);
+  if (version !== screenVersion) return;
+  const section = panel('Prueba de Invitado · ' + unit.nombre);
+  section.append(node('p', 'Selecciona sólo funciones comprobadas en esta unidad. DETENER es obligatorio.'));
+  const choices = new Set(['ADELANTE', 'ATRAS', 'GIRAR_IZQUIERDA', 'GIRAR_DERECHA',
+    'SUBIR_HORQUILLA', 'BAJAR_HORQUILLA', 'LUCES', 'SONIDO', 'VELOCIDAD', 'DETENER']);
+  const available = catalog.comandos.filter(command => command.activo && choices.has(command.nombre));
+  const selected = new Set(settings.comandos || []);
+  const editor = form(section, [
+    { name: 'habilitada', label: 'Prueba', value: settings.habilitada ? '1' : '0', options: [['0', 'Deshabilitada'], ['1', 'Habilitada']] },
+    { name: 'duracion_s', label: 'Duración de sesión (15–120 s)', type: 'number', value: settings.duracion_s ?? 60 },
+    { name: 'pulso_ms', label: 'Pulso máximo (50–500 ms)', type: 'number', value: settings.pulso_ms ?? 300 },
+  ], 'Guardar prueba', async values => {
+    const commands = Array.from(fieldset.querySelectorAll('input:checked'), input => Number(input.value));
+    if (!commands.some(id => available.find(command => command.id_comando === id)?.nombre === 'DETENER')) {
+      throw new Error('Selecciona DETENER antes de guardar.');
+    }
+    await fetchData('/admin/unidades/' + unit.id_vehiculo + '/invitados', { method: 'POST',
+      body: { habilitada: values.habilitada === '1', duracion_s: Number(values.duracion_s),
+        pulso_ms: Number(values.pulso_ms), comandos: commands } });
+    await showUnits();
+  });
+  for (const [name, min, max] of [['duracion_s', 15, 120], ['pulso_ms', 50, 500]]) {
+    const input = editor.elements.namedItem(name);
+    input.min = min; input.max = max; input.step = 1;
+  }
+  const fieldset = node('fieldset', undefined, 'guest-capabilities');
+  fieldset.append(node('legend', 'Comandos permitidos'));
+  for (const command of available) {
+    const label = node('label');
+    const input = node('input');
+    input.type = 'checkbox'; input.value = command.id_comando;
+    input.checked = selected.has(command.id_comando) || (!settings.configurada && command.nombre === 'DETENER');
+    label.append(input, document.createTextNode(command.nombre.replaceAll('_', ' ')));
+    fieldset.append(label);
+  }
+  if (!available.some(command => command.nombre === 'DETENER')) {
+    section.append(node('p', 'Falta un comando DETENER activo. La prueba no puede habilitarse.'));
+    editor.querySelector('button[type=submit]').disabled = true;
+  }
+  editor.insertBefore(fieldset, editor.lastElementChild);
+  section.append(button('Finalizar reserva actual', async () => {
+    await fetchData('/admin/unidades/' + unit.id_vehiculo + '/invitados/cerrar', { method: 'POST' });
+    $('#account-message').textContent = 'El servidor procesó el cierre de la reserva de Invitado.';
+  }), button('Volver a Unidades', showUnits));
+}
+
 let catalogVersion = 0;
 async function showPublicCatalog(offset = 0) {
   const version = ++catalogVersion;
@@ -382,13 +438,37 @@ async function showPublicCatalog(offset = 0) {
   const data = await fetchData('/catalogo?limite=20&offset=' + offset);
   if (version !== catalogVersion) return;
   host.replaceChildren(node('h3', 'Prueba nuestros vehículos IoT'));
-  host.append(node('p', 'Modelos publicados por la empresa. Las pruebas de control todavía no están disponibles.'));
-  table(host, [['nombre', 'Modelo'], ['descripcion', 'Descripción'], ['unidades_exhibicion', 'Unidades de exhibición']], data.modelos);
+  host.append(node('p', 'Consulta las unidades configuradas para una prueba temporal y exclusiva.'));
+  table(host, [['nombre', 'Modelo'], ['descripcion', 'Descripción'], ['unidades_exhibicion', 'Unidades de exhibición']], data.modelos,
+    (model, cell) => cell.append(button('Ver pruebas disponibles', () => showGuestUnits(model))));
   const navigation = node('div', undefined, 'account-actions');
   if (offset > 0) navigation.append(button('Página anterior', () => showPublicCatalog(Math.max(0, offset - 20))));
   if (data.modelos.length === 20) navigation.append(button('Página siguiente', () => showPublicCatalog(offset + 20)));
   navigation.append(button('Cerrar catálogo', () => { catalogVersion++; host.hidden = true; }));
   host.append(navigation);
+}
+
+async function showGuestUnits(model) {
+  const version = ++catalogVersion;
+  const host = $('#public-catalog');
+  host.hidden = false;
+  host.replaceChildren(node('p', 'Consultando unidades…'));
+  const data = await fetchData('/catalogo/' + model.id_modelo + '/unidades');
+  if (version !== catalogVersion) return;
+  host.replaceChildren(node('h3', model.nombre));
+  const units = data.unidades.map(unit => ({ ...unit,
+    estado_prueba: unit.ocupada ? 'Ocupada · actualiza para comprobar' : unit.disponible ? 'Disponible para reservar' : 'No disponible' }));
+  table(host, [['nombre', 'Unidad'], ['duracion_s', 'Duración (s)'], ['pulso_ms', 'Pulso (ms)'], ['estado_prueba', 'Estado']], units,
+    (unit, cell) => {
+      const reserve = button('Reservar prueba', async () => {
+        reserve.disabled = true;
+        try { await reserveGuestTrial(unit); }
+        finally { if (reserve.isConnected) reserve.disabled = !unit.disponible; }
+      });
+      reserve.disabled = !unit.disponible;
+      cell.append(reserve);
+    });
+  host.append(button('Actualizar disponibilidad', () => showGuestUnits(model)), button('Volver al catálogo', () => showPublicCatalog()));
 }
 
 function showIdentity() {

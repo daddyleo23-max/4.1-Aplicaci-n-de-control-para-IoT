@@ -6,19 +6,19 @@ export class ApiError extends Error {
   constructor(message, status = 0, details = '') { super(message); this.name = 'ApiError'; this.status = status; this.details = details; }
 }
 
-export async function request(path, { method = 'GET', body, headers = {}, timeout = config.requestTimeoutMs } = {}) {
+export async function request(path, { method = 'GET', body, headers = {}, timeout = config.requestTimeoutMs, accountBound = true } = {}) {
   const controller = new AbortController();
   const sessionAtStart = currentToken();
   const timer = setTimeout(() => controller.abort(), timeout);
   try {
     const response = await fetch(new URL(path, config.apiBaseUrl), {
       method,
-      headers: { Accept: 'application/json', ...(body ? { 'Content-Type': 'application/json' } : {}), ...sessionHeaders(), ...headers },
+      headers: { Accept: 'application/json', ...(body ? { 'Content-Type': 'application/json' } : {}), ...(accountBound ? sessionHeaders() : {}), ...headers },
       body: body ? JSON.stringify(body) : undefined,
       signal: controller.signal,
     });
     const raw = await response.text();
-    if (config.sessionAuth && sessionAtStart !== currentToken()) throw new ApiError('La sesión cambió durante la consulta.');
+    if (accountBound && config.sessionAuth && sessionAtStart !== currentToken()) throw new ApiError('La sesión cambió durante la consulta.');
     let data = null;
     if (raw) { try { data = JSON.parse(raw); } catch { throw new ApiError('La API devolvió una respuesta no válida.', response.status); } }
     if (!response.ok) {

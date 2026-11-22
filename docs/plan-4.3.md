@@ -622,3 +622,27 @@ context manager antes de enviar autenticación. No requiere repetir la prueba
 real aprobada ni modificar el backend por ese aviso.
 Siguiente bloque: integrar configuración, reserva, controles limitados y
 contador de Invitado en la interfaz existente; el diseño se ajustará después.
+
+
+## Interfaz de Invitado integrada
+
+Se añadió configuración por unidad de exhibición sin propietario en
+Administración → Unidades → Configurar Invitado: habilitación, duración,
+pulso y selección del catálogo real; DETENER es obligatorio. El catálogo
+público permite consultar disponibilidad y reservar una prueba exclusiva.
+La prueba muestra contador, comandos permitidos y cierre explícito. Los
+botones esperan autorización WS y se bloquean al desconectarse o vencer.
+El token temporal se conserva sólo en memoria y se separa de la sesión de
+cuenta. Cambiar de cuenta cierra la prueba; salir de la página solicita
+cierre mediante WS y keepalive, además de la caducidad del backend.
+
+Se comprobó en navegador con backend real local y MariaDB desechable:
+reserva, autorización WS, envío ADELANTE, vencimiento con cierre y guardado
+de configuración administrativa. Esta comprobación no usa RDS ni hardware;
+complementa la validación previa de la API 012 que sí ejecutó el usuario.
+El paquete frontend_4_3_prueba.zip está preparado para localhost:8001.
+No requiere otra migración ni sustituir el backend 012. Queda pendiente
+comprobar esta interfaz en el Windows del usuario. Las unidades generadas
+por las pruebas HTTP anteriores quedaron inactivas: un catálogo vacío es
+correcto hasta preparar una unidad de exhibición habilitada. La unidad 1
+asignada al comprador no se convierte automáticamente en exhibición.
