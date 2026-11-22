@@ -6,6 +6,7 @@ import { connectWebSocket } from './websocket-client.js';
 import { bindJoystick } from './joystick.js';
 import { startHealthPolling } from './connection-status.js';
 import './monitoring.js';
+import './buyer-control.js';
 import { openDemoPanel } from './presentation.js';
 import { currentToken } from './account-session.js';
 

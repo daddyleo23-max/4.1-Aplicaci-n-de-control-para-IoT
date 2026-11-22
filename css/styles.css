@@ -453,3 +453,6 @@ body.control-expanded{overflow:hidden}
   .remote-safety .stop-button{display:grid;place-items:center;min-width:clamp(30px,8svh,42px);width:clamp(30px,8svh,42px);min-height:clamp(30px,8svh,42px);height:clamp(30px,8svh,42px);padding:0;border-radius:50%;box-shadow:0 2px 0 #9e3e34;font-size:0}
   .remote-safety .stop-button span{margin:0;font-size:10px}
 }
+#buyer-control{grid-template-columns:auto minmax(0,1fr) auto}#buyer-control p{margin:0;font-size:.85rem}
+@media(max-width:600px){#buyer-control{grid-template-columns:1fr}#buyer-control .account-actions{display:flex;flex-wrap:wrap}}
+@media(max-width:1000px) and (orientation:landscape){.commands-panel #buyer-control:not([hidden]){display:flex!important;position:fixed;top:6px;left:50%;transform:translateX(-50%);z-index:45;gap:8px;max-width:70vw;padding:5px 8px;margin:0}#buyer-control>strong{display:none}#buyer-control p{font-size:10px;max-width:25vw}#buyer-control button{min-height:30px;padding:4px 8px;font-size:11px}#buyer-control .account-actions{flex-wrap:nowrap}}

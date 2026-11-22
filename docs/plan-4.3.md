@@ -792,3 +792,30 @@ HTTP/WS acredita parada física; los límites/watchdog del firmware requieren
 validación específica. Antes de volver a backend anterior, cerrar las
 reservas de comprador con este servicio y verificar ausencia de pendientes;
 conservar tablas e historial, sin DROP ni liberar manualmente una parada.
+
+## Integración web de la reserva del comprador
+
+El usuario completó las 43 comprobaciones de probar_control_http.py sobre
+RDS/Windows. Informe control_http_651c6dee10f0.json: exclusividad entre
+sesiones/canales, movimientos, prioridad DETENER durante demo, cierre,
+desconexión, logout y caducidad real. SQL015 con código 0 y conservación=True.
+
+El frontend añade Adquirir control/Liberar control sólo al comprador con
+unidad seleccionada. Mantiene separado el WSS de monitoreo y el canal de
+control, renueva cada 10 s y bloquea envío local hasta recibir autorización.
+Si no se confirma la renovación en 25 s, pide cierre sin reanudar movimientos.
+Liberar, cambiar de unidad/cuenta, salir de Control o cerrar página solicita
+cierre; WebSocket y caducidad de servidor complementan keepalive. Una
+respuesta tardía de adquisición no se acepta para otra cuenta/unidad.
+El botón también es accesible en la vista móvil horizontal. El modo legado
+API key y los controles del administrador sin propietario no adquieren esta
+reserva de comprador. SQL y backend permanecen en la entrega 016.
+
+Se comprobó en navegador local con backend y MariaDB desechables:
+autorización del canal, DETENER HTTP201, liberación explícita y liberación al
+navegar a Monitoreo conservando su WSS. El primer intento reveló que el menú
+usa replaceState, que no genera hashchange; se añadió evento iot:view a la
+navegación y se repitió correctamente el recorrido. La renovación de 10 s
+mantuvo el estado autorizado durante las comprobaciones. No es prueba en
+RDS del nuevo frontend ni prueba de hardware; falta confirmación del usuario.
+El ZIP frontend_4_3_prueba.zip contiene esta integración para localhost8001.

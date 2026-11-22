@@ -76,6 +76,14 @@
             </div>
             <p id="auth-status" role="status" aria-live="polite">No se ha guardado ninguna clave.</p>
           </section>
+          <section id="buyer-control" class="auth-panel" aria-label="Reserva exclusiva de control" hidden>
+            <strong>Control exclusivo</strong>
+            <p role="status" aria-live="polite">Adquiere el control para enviar movimientos o demos.</p>
+            <div class="account-actions">
+              <button type="button" data-acquire>Adquirir control</button>
+              <button type="button" data-release disabled>Liberar control</button>
+            </div>
+          </section>
           <div class="remote-shell">
             <svg class="icon-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <symbol id="icon-up" viewBox="0 0 24 24"><path d="M12 3 4.5 12h4.7v8h5.6v-8h4.7L12 3Z"/></symbol>

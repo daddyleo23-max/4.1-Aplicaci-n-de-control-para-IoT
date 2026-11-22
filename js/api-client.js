@@ -1,4 +1,5 @@
 import { config } from './config.js';
+import { requireControlGrant } from './control-session.js';
 import { getWriteHeaders } from './auth-session.js';
 import { sessionHeaders, currentToken } from './account-session.js';
 
@@ -47,14 +48,17 @@ export const api = {
   async commands() { return (await request(`/vehiculos/${config.vehicleId}/comandos`)).data; },
   async demos() { return (await request(`/vehiculos/${config.vehicleId}/demos`)).data; },
   async move(idCommand) {
+    requireControlGrant();
     const headers = writeHeaders();
     return request(`/vehiculos/${config.vehicleId}/movimientos`, { method: 'POST', headers, body: { id_comando: idCommand } });
   },
   async startDemo(idDemo) {
+    requireControlGrant();
     const headers = writeHeaders();
     return request(`/vehiculos/${config.vehicleId}/demos/${idDemo}/iniciar`, { method: 'POST', headers });
   },
   async cancelDemo() {
+    requireControlGrant();
     const headers = writeHeaders();
     return request(`/vehiculos/${config.vehicleId}/demos/cancelar`, { method: 'POST', headers });
   },

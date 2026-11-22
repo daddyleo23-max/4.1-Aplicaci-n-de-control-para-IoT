@@ -183,6 +183,7 @@ function setView(name, updateUrl = true) {
   $('#tab-control').setAttribute('aria-pressed', String(!monitor && !admin));
   $('#tab-monitor').setAttribute('aria-pressed', String(monitor));
   if (updateUrl) history.replaceState(null, '', admin ? '#cuenta' : monitor ? '#monitoreo' : '#control');
+  document.dispatchEvent(new CustomEvent('iot:view', { detail: { name } }));
   if (monitor) syncMonitoring();
 }
 
