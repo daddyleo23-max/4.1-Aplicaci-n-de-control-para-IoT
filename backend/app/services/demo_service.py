@@ -54,6 +54,16 @@ class DemoService:
                 raise HTTPException(
                     409, "Ya hay una demo ejecutándose en este vehículo."
                 )
+            from app.resource_security import sessions_enabled
+            if sessions_enabled():
+                import pymysql
+                try:
+                    await asyncio.to_thread(self.servicio.ejecutar_transaccion,
+                                            [("sp_reserva_exigir_libre", (id_vehiculo,))])
+                except pymysql.MySQLError as error:
+                    if error.args[0] in (1644, 1205, 1213):
+                        raise HTTPException(409, "La unidad tiene una reserva activa.") from error
+                    raise
 
             tarea = asyncio.create_task(
                 self._ejecutar(id_vehiculo, id_demo, movimientos)

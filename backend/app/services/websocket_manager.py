@@ -33,9 +33,15 @@ class WebSocketManager:
             try:
                 from app.resource_security import sessions_enabled, check_socket_access
                 if sessions_enabled():
-                    await asyncio.to_thread(
-                        check_socket_access, websocket.state.session_token, id_vehiculo,
-                    )
+                    if getattr(websocket.state, "auth_kind", None) == "guest":
+                        from app.services.guest_service import guest_service
+                        row = await asyncio.to_thread(guest_service.context, websocket.state.session_token)
+                        if row["id_vehiculo"] != id_vehiculo:
+                            raise ValueError("Suscripción incompatible")
+                    else:
+                        await asyncio.to_thread(
+                            check_socket_access, websocket.state.session_token, id_vehiculo,
+                        )
                 await websocket.send_json(mensaje)
             except Exception:
                 self.desconectar(id_vehiculo, websocket)

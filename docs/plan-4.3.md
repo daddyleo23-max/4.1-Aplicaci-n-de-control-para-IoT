@@ -525,3 +525,85 @@ comentarios de línea y diferencias de espacio al comparar definiciones,
 porque el motor puede omitir comentarios en ROUTINE_DEFINITION.
 La recuperación real en RDS y la configuración del grupo de parámetros
 continúan pendientes del diagnóstico y de la acción del usuario en AWS.
+
+## Recuperación y validación real de 011 completadas
+
+El usuario creó iot-mysql84-triggers (familia mysql8.4), lo asoció a
+instancia-rds-iot y reinició RDS. Confirmó binlog=1 y trust_creators=1.
+La recuperación creó los cinco triggers, registró 011 y confirmó conservación
+de datos y SP. Informe recuperacion_011_20261122-042555-218510.json.
+Después pasó las 30 pruebas SQL reales en RDS con ROLLBACK de los datos nuevos.
+Informe reservas_sql_20261122-042713-470743.json. El usuario también confirmó
+la interfaz del catálogo vacío. No se habilitó exhibición sobre la unidad 1.
+
+## Entrega 012: API de Invitado preparada
+
+Estimación de avance comunicada: alrededor del 65 % de la actividad completa,
+considerando bloques comprobados y trabajo restante. No equivale a puntuación
+de rúbrica ni confirma que la práctica esté lista para entregar.
+
+012 añade nueve rutinas para identificar sesiones, consultar configuración y
+unidades públicas, enumerar reservas, registrar un movimiento validado, pedir
+DETENER, auditar cierre administrativo y exigir unidad libre en operaciones
+normales. Reutiliza los SP originales de estado e historial sin modificarlos.
+Los movimientos pedidos por Invitado se guardan como individuales MANUAL;
+las paradas automáticas actualizan estado y emiten evento, sin añadir otro
+registro individual. El guardado de movimiento y sus validaciones se realizan
+en una transacción con bloqueo de unidad.
+
+| Ruta nueva | Acceso y función |
+| --- | --- |
+| GET/POST /admin/unidades/{id}/invitados | Admin consulta/configura habilitación, duración, pulso y lista de comandos. |
+| POST /admin/unidades/{id}/invitados/cerrar | Admin revoca la prueba de exhibición y audita su identidad. |
+| GET /catalogo/{id}/unidades | Público; unidades configuradas de exhibición, ocupación y límites, sin datos de compradores. |
+| POST /invitados/sesiones | Público limitado por solicitudes; reserva exclusivamente la unidad elegida. |
+| GET /invitados/sesion | Bearer de Invitado; estado temporal y comandos permitidos. |
+| POST /invitados/movimientos | Bearer de Invitado y canal WS conectado; sólo id_comando autorizado. |
+| POST /invitados/sesion/cerrar | Bearer de esa sesión; cierre idempotente, incluso tras vencimiento. |
+| WS /ws/invitados | Primer mensaje autenticar/token; unidad derivada de sesión, un canal por sesión. |
+
+Las sesiones de Invitado se distinguen de las cuentas. Un token de Invitado
+vigente obtiene 403 en Administración y rutas privadas. Sólo la creación
+devuelve el token en claro; se guarda su hash y las respuestas privadas usan
+Cache-Control:no-store. Hay límites iniciales de diez solicitudes de creación
+por cliente/minuto y cuatro pulsos por sesión/segundo. DETENER tiene prioridad
+y puede interrumpir un pulso pendiente sin esperar al siguiente comando.
+
+Los pulsos se acotan a la configuración y al tiempo restante. Cada pulso
+termina solicitando DETENER por SQL y evento movimiento. Se espera el trabajo
+completo antes de propagar la cancelación HTTP, para evitar que un hilo SQL
+registre movimiento después de una parada. El cierre revoca, pide DETENER y
+sólo después libera. Si falla, la reserva queda bloqueada para reintentar.
+Una sesión antigua cerrada no vuelve a detener una reserva posterior.
+
+El canal WS debe conectarse antes de mover; si no se abre en 20 segundos se
+cierra la prueba. Su desconexión, caducidad o cierre explícito finalizan la
+sesión. Un barrido cada segundo procesa pendientes; al arrancar se recuperan
+reservas anteriores antes de habilitar nuevas y al apagar se solicita cierre.
+Los movimientos normales y demos respetan la reserva SQL de Invitado. Esta
+versión mantiene un proceso Uvicorn: los sockets y coordinación de tareas están
+en memoria, como en la arquitectura previa. Reservas de comprador por sesión
+y soporte autorizado todavía requieren integración adicional.
+
+Se verificaron 84 pruebas locales, incluida cancelación HTTP durante SQL,
+prioridad DETENER, errores de parada, no liberación prematura y permisos.
+También pasó una prueba real de 41 comprobaciones REST/WS contra el backend
+local y MariaDB desechable: reserva, exclusividad, 401/403/409, pulso y eventos
+DETENER, cancelación, desconexión, caducidad real de 15 segundos y auditoría.
+Se incorporaron los 21 SP y los índices originales del inventario al entorno
+local. La collation de prueba se unificó en utf8mb4_unicode_ci; RDS conserva
+su propia configuración. No equivale a validar 012 en MySQL 8.4.9.
+
+probar_invitados_http.py crea un modelo y una unidad nuevos, con comandos de
+prueba ADELANTE=1, POWER=11 y DETENER=13. Sólo ADELANTE/DETENER se permiten en
+esa reserva; POWER se usa para comprobar rechazo. La unidad no tiene hardware
+asociado y se verifican solicitudes/eventos, no movimiento físico. Su modelo
+queda privado/inactivo y la unidad inactiva al terminar. Los tokens no se
+guardan en el informe. La ficha comercial de unidad 1 se consulta sin alterarla.
+
+Falta aplicar 012 y comprobar este recorrido en RDS/Windows. Después se
+integrarán configuración de Invitado, controles y contador en el frontend.
+Para volver a un backend anterior se deben cerrar las reservas y verificar
+reservas_control vacía antes del cambio, conservando tablas e historial.
+La recepción física de DETENER y los límites reales siguen requiriendo
+validación del firmware y temporizador de seguridad del microcontrolador.

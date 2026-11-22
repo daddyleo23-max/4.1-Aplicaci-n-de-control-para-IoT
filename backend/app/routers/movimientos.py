@@ -19,6 +19,15 @@ async def registrar_movimiento(
     id_vehiculo: int,
     movimiento: MovimientoRequest,
 ):
+    from app.resource_security import sessions_enabled
+    from app.services.demo_service import demo_service
+    if sessions_enabled():
+        async with demo_service.bloqueo:
+            return await _registrar_movimiento(id_vehiculo, movimiento)
+    return await _registrar_movimiento(id_vehiculo, movimiento)
+
+
+async def _registrar_movimiento(id_vehiculo, movimiento):
     try:
         # 1. Comprobar que el vehículo exista y esté activo.
         vehiculos = servicio.ejecutar_consulta(
@@ -82,7 +91,9 @@ async def registrar_movimiento(
         conectado = estados[0]["conectado"] if estados else 0
 
         # 5. Actualizar estado e historial en una transacción.
-        servicio.ejecutar_transaccion([
+        from app.resource_security import sessions_enabled
+        guard = [("sp_reserva_exigir_libre", (id_vehiculo,))] if sessions_enabled() else []
+        servicio.ejecutar_transaccion(guard + [
             (
                 "sp_actualizar_estado",
                 (id_vehiculo, movimiento.id_comando, conectado),
@@ -116,6 +127,8 @@ async def registrar_movimiento(
         raise
 
     except pymysql.MySQLError as error:
+        if error.args[0] in (1644, 1205, 1213):
+            raise HTTPException(409, "La unidad tiene otra operación o reserva activa.") from error
         print(f"Error de MySQL al registrar movimiento: {error}")
         raise HTTPException(
             status_code=503,

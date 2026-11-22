@@ -16,6 +16,9 @@ BASE_TABLES = {
     "vehiculos", "comandos", "estado_vehiculo",
     "historial_comandos", "demos", "demo_movimientos",
 }
+TABLES_011 = BASE_TABLES | {"migraciones_iot", "usuarios", "modelos", "asignaciones",
+                          "sesiones", "auditoria", "configuracion_invitados",
+                          "comandos_invitado", "sesiones_invitado", "reservas_control"}
 
 
 def quote(name):
@@ -73,7 +76,7 @@ def snapshot(cursor, schema):
     )
     data["procedimientos"] = [
         row for row in cursor.fetchall()
-        if not row["ROUTINE_NAME"].startswith(("sp_auth_", "sp_admin_", "sp_usuario_", "sp_acceso_", "sp_editor_", "sp_catalogo_", "sp_invitado_"))
+        if not row["ROUTINE_NAME"].startswith(("sp_auth_", "sp_admin_", "sp_usuario_", "sp_acceso_", "sp_editor_", "sp_catalogo_", "sp_invitado_", "sp_reserva_"))
     ]
     return data
 
@@ -129,8 +132,11 @@ def main():
         "011", BASE_TABLES | {"migraciones_iot", "usuarios", "modelos",
                              "asignaciones", "sesiones", "auditoria"},
     )
+    migrations["012_api_invitados.up.sql"] = (
+        "012", TABLES_011,
+    )
     if sql.name not in migrations:
-        raise SystemExit("Este ejecutor admite las migraciones 001 a 011.")
+        raise SystemExit("Este ejecutor admite las migraciones 001 a 012.")
     version, expected_tables = migrations[sql.name]
     root = Path.cwd()
     sys.path.insert(0, str(root))

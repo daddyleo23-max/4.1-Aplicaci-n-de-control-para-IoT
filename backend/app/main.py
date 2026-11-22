@@ -1,4 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends
+import asyncio
+from contextlib import asynccontextmanager, suppress
+import logging
 from fastapi.middleware.cors import CORSMiddleware
 import pymysql
 
@@ -13,10 +16,29 @@ from app.routers.administracion import router as administracion_router
 from app.routers.cuenta import router as cuenta_router
 from app.routers.editor_demos import router as editor_demos_router
 from app.routers.catalogo import router as catalogo_router
-from app.resource_security import authorize_resources
+from app.routers.invitados import router as invitados_router
+from app.services.guest_service import guest_service
+from app.resource_security import authorize_resources, sessions_enabled
+
+
+@asynccontextmanager
+async def lifespan(application):
+    task = asyncio.create_task(guest_service.worker()) if sessions_enabled() else None
+    try:
+        yield
+    finally:
+        if task is not None:
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
+            try:
+                await guest_service.shutdown()
+            except Exception:
+                logging.getLogger(__name__).warning("Quedan reservas bloqueadas para recuperar al siguiente arranque.")
 
 
 app = FastAPI(
+    lifespan=lifespan,
     title="API para Vehículo IoT",
     description="API REST y WebSocket para controlar un vehículo IoT.",
     version="1.0.0",
@@ -54,6 +76,7 @@ app.include_router(administracion_router)
 app.include_router(cuenta_router)
 app.include_router(editor_demos_router)
 app.include_router(catalogo_router)
+app.include_router(invitados_router)
 
 
 @app.get("/health/db")

@@ -25,6 +25,9 @@ def require_session(
         "sp_auth_obtener_sesion", (token_hash(credentials.credentials),),
     )
     if not rows:
+        guest = service.ejecutar_consulta("sp_invitado_obtener", (token_hash(credentials.credentials),))
+        if guest:
+            raise HTTPException(403, "La sesión de Invitado sólo permite las rutas de exhibición.")
         raise HTTPException(401, "Sesión vencida o revocada.",
                             headers={"WWW-Authenticate": "Bearer"})
     return rows[0]
