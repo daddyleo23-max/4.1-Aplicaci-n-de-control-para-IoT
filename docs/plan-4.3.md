@@ -422,3 +422,77 @@ un archivo .estado_verificado.json con publicación/actividad del modelo y
 actividad, estado comercial y ausencia de propietario de la unidad de prueba.
 Sólo inicia/cierra una sesión y lee inventario; no crea ni modifica esos
 registros. La confirmación real del estado final está pendiente de esta lectura.
+
+El usuario confirmó la lectura posterior: modelo privado e inactivo y unidad
+inactiva sin propietario. El informe anterior mostró que el 409 era sólo la
+baja redundante. Se guardó http_catalogo_eec461b73ebc.estado_verificado.json.
+También confirmó actualizar el frontend y ver el catálogo público vacío.
+
+## Entrega 011: base SQL de reservas de Invitado
+
+Esta entrega prepara persistencia y transiciones; no publica nuevos endpoints
+ni habilita control de Invitado en la web. Añade cuatro tablas:
+
+| Tabla | Propósito |
+| --- | --- |
+| configuracion_invitados | Habilitación explícita, duración de sesión y máximo de pulso por unidad. |
+| comandos_invitado | Lista de comandos existentes, activos y pertenecientes a la unidad. |
+| sesiones_invitado | Hash SHA256 del token, fechas y motivo de cierre; conserva el historial. |
+| reservas_control | Una reserva vigente por unidad mediante PK, con estado ACTIVA o DETENIENDO. |
+
+```mermaid
+erDiagram
+    vehiculos ||--o| configuracion_invitados : configura
+    usuarios ||--o{ configuracion_invitados : administra
+    configuracion_invitados ||--o{ comandos_invitado : permite
+    comandos ||--o{ comandos_invitado : referencia
+    vehiculos ||--o{ sesiones_invitado : recibe
+    sesiones_invitado ||--o| reservas_control : ocupa
+    vehiculos ||--o| reservas_control : reserva
+```
+
+La reserva exige unidad activa de exhibición, modelo activo publicado,
+ausencia de propietario, configuración habilitada y DETENER activo permitido.
+Bloquea la fila de unidad y modelo en transacción. Una reserva vencida no se
+reutiliza automáticamente: se cierra la sesión, conserva el bloqueo durante
+DETENIENDO y sólo se libera cuando el servicio de cierre procesa DETENER.
+La función SQL de liberación es interna y no demuestra recepción física.
+Las rutinas se deben invocar en transacciones desde el backend; no hacen COMMIT.
+
+Límites de software iniciales elegidos: sesión de 15 a 120 s, pulso de 50 a
+500 ms y entre uno y diez comandos con DETENER obligatorio. Son límites
+conservadores de esta aplicación, no valores medidos del circuito. POWER y
+DEMO quedan fuera de la lista permitida. No se inventan códigos de hardware.
+La pertenencia del comando a su unidad se comprueba al configurar y consultar.
+
+Cinco triggers impiden cambiar una unidad reservada, sus comandos, su
+asignación o retirar/desactivar su modelo mientras exista la reserva.
+La auditoría conserva configuración, reserva, cierre y liberación sin tokens.
+Los registros de sesiones no se eliminan; se elimina sólo la ocupación temporal.
+La ampliación de reservas a sesiones de comprador y soporte sigue pendiente.
+
+Se instaló un servidor local desechable MariaDB 12.3.2, accesible únicamente
+por socket privado. Se reconstruyeron las columnas originales desde el
+inventario y se compilaron migraciones 001–011, sustituyendo únicamente en esa
+prueba utf8mb4_0900_ai_ci por utf8mb4_unicode_ci. No equivale a probar MySQL
+8.4.9 de RDS. Pasaron 30 comprobaciones SQL reales y la competencia de dos
+conexiones: sólo una obtuvo la reserva y la otra fue rechazada con 1644.
+La suite HTTP local anterior de 56 pruebas siguió pasando.
+
+probar_reservas_sql.py usa datos nuevos dentro de una transacción y ROLLBACK.
+No envía comandos REST/WSS ni cambia la unidad 1. Prueba límites, comandos,
+exclusividad, triggers, expiración, cancelación, cierre, liberación y auditoría.
+AUTO_INCREMENT puede avanzar. Falta aplicarlo y ejecutarlo en la copia RDS.
+
+Antes de habilitar Invitados faltan los endpoints autenticados por token
+temporal, control y WSS limitados, reloj, detección de desconexión, barrido de
+reservas vencidas y detención al arrancar/recuperar el servicio. Las rutas
+operativas actuales también deben respetar reservas para evitar intervención
+de otra sesión. Deben verificarse de manera independiente la publicación del
+evento DETENER y la reacción física, con temporizador de seguridad en firmware.
+
+Recuperación ante DDL parcial: conservar informe y revisar las cuatro tablas,
+siete rutinas sp_invitado_* y cinco triggers antes de reintentar. Los 21 SP y
+registros originales se conservan. Para retirar esta ampliación sin pérdida
+se pueden deshabilitar sus consumidores, conservar tablas/historial y revisar
+los triggers añadidos. No se presupone reversión por ROLLBACK del DDL.
