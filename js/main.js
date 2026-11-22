@@ -1,4 +1,4 @@
-import { config, clearVehicleSelection } from './config.js';
+import { config, clearVehicleSelection, selectedSupportScope } from './config.js';
 import { clearSessionApiKey, initializeLocalAuth, isLocalHost, setSessionApiKey } from './auth-session.js';
 import { api, ApiError } from './api-client.js';
 import { elements, feedback, renderCommands, renderDemos, setDemoStatus, setEvent, setStatus } from './ui.js';
@@ -120,7 +120,7 @@ let initialLoadEpoch = 0;
 let pendingDemoId = null;
 async function loadInitialData() {
   const epoch = ++initialLoadEpoch;
-  const [vehicleResult, commandResult, demoResult] = await Promise.allSettled([api.vehicle(), api.commands(), api.demos()]);
+  const [vehicleResult, commandResult, demoResult] = await Promise.allSettled([api.vehicle(), api.commands(), selectedSupportScope() ? Promise.resolve({ demos: [] }) : api.demos()]);
   if (epoch !== initialLoadEpoch) return;
   if (vehicleResult.status === 'fulfilled') {
     const vehicle = vehicleResult.value;
@@ -129,7 +129,7 @@ async function loadInitialData() {
     document.querySelector('.eyebrow').textContent = `MANDO 2.4 GHz · VEHÍCULO ${String(vehicle.id_vehiculo || config.vehicleId).padStart(2,'0')}`;
   } else feedback(`No se pudo cargar el vehículo: ${vehicleResult.reason.message}`);
   if (commandResult.status === 'fulfilled') {
-    commands = commandResult.value.comandos || [];
+    commands = (commandResult.value.comandos || []).filter(command => !selectedSupportScope() || command.nombre !== 'DEMO');
     commandById.clear();
     commands.forEach((command) => commandById.set(command.id_comando, command));
     stopCommand = commands.find((item) => item.nombre?.trim().toUpperCase() === 'DETENER' && item.activo !== false && item.activo !== 0) || null;

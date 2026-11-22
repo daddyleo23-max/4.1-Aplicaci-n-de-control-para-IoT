@@ -96,6 +96,8 @@ function form(container, fields, submitText, save) {
     input.value = String(field.value ?? '');
     if (field.maxLength) input.maxLength = field.maxLength;
     if (field.minLength) input.minLength = field.minLength;
+    if (field.min !== undefined) input.min = field.min;
+    if (field.max !== undefined) input.max = field.max;
     label.append(input);
     result.append(label);
   }
@@ -283,7 +285,65 @@ async function showMyVehicles() {
   table(panel('Mis vehículos'), [['identificador_unidad', 'Identificador'], ['nombre', 'Vehículo'],
     ['nombre_modelo', 'Modelo'], ['estado_comercial', 'Estado']], data.vehiculos,
   (unit, cell) => cell.append(button('Controlar', () => selectForControl(unit)),
-    button('Demos', () => showDemos(unit.id_vehiculo))));
+    button('Demos', () => showDemos(unit.id_vehiculo)),
+    button('Autorizar soporte', () => showSupport(unit))));
+}
+
+function supportDate(value) {
+  if (!value) return '—';
+  const date = new Date(/[zZ]$|[+-]\d{2}:\d{2}$/.test(value) ? value : value + 'Z');
+  return Number.isNaN(date.getTime()) ? 'Fecha no disponible' : date.toLocaleString('es-MX', { timeZone: 'America/Mexico_City' }) + ' · CDMX';
+}
+
+async function showSupport(unit) {
+  const version = beginScreen();
+  const [targets, data] = await Promise.all([
+    fetchData('/soporte/administradores'), fetchData(`/vehiculos/${unit.id_vehiculo}/soporte`),
+  ]);
+  if (version !== screenVersion) return;
+  const section = panel('Autorizar soporte · ' + unit.nombre);
+  section.append(node('p', 'Elige al administrador y el alcance. Soporte operativo permite movimientos manuales mediante reserva exclusiva; no permite demos privadas. Puedes revocar el permiso en cualquier momento.'));
+  if (targets.administradores.length) {
+    form(section, [
+      { name: 'id_administrador', label: 'Administrador autorizado', options: targets.administradores.map(a => [a.id_administrador, a.nombre]) },
+      { name: 'operativo', label: 'Alcance del permiso', value: '0', options: [['0', 'Sólo monitoreo'], ['1', 'Soporte operativo: movimientos manuales']] },
+      { name: 'minutos', label: 'Duración del permiso (minutos)', type: 'number', value: 5, min: 1, max: 30 },
+    ], 'Conceder permiso', async values => {
+      await fetchData(`/vehiculos/${unit.id_vehiculo}/soporte`, { method: 'POST', body: {
+        id_administrador: Number(values.id_administrador), minutos: Number(values.minutos), operativo: values.operativo === '1',
+      } });
+      await showSupport(unit);
+    });
+  } else section.append(node('p', 'No hay administradores activos disponibles.'));
+  const rows = data.permisos.map(p => ({ ...p, alcance: p.operativo ? 'OPERATIVO' : 'MONITOREO',
+    vencimiento: supportDate(p.expira_utc), estado: p.vigente ? 'Vigente' : 'Finalizado' }));
+  table(section, [['administrador', 'Administrador'], ['alcance', 'Alcance'], ['vencimiento', 'Vencimiento'], ['estado', 'Estado']], rows,
+    (permission, cell) => {
+      if (permission.vigente) cell.append(button('Revocar permiso', async () => {
+        await fetchData(`/vehiculos/${unit.id_vehiculo}/soporte/${permission.id_permiso}/revocar`, { method: 'POST' });
+        await showSupport(unit);
+      }));
+    });
+  section.append(button('Actualizar permisos', () => showSupport(unit)), button('Volver a mis vehículos', showMyVehicles));
+}
+
+async function showAuthorizedSupport() {
+  const version = beginScreen();
+  const data = await fetchData('/admin/soporte');
+  if (version !== screenVersion) return;
+  const section = panel('Soporte autorizado');
+  section.append(node('p', 'Sólo aparecen permisos vigentes concedidos a tu cuenta. El control operativo requiere adquirir la reserva; el comprador puede revocarlo.'));
+  const rows = data.permisos.map(p => ({ ...p, alcance: p.operativo ? 'OPERATIVO' : 'MONITOREO', vencimiento: supportDate(p.expira_utc) }));
+  table(section, [['identificador_unidad', 'Identificador'], ['nombre', 'Unidad'], ['alcance', 'Alcance'], ['vencimiento', 'Vencimiento']], rows,
+    (permission, cell) => {
+      const open = monitor => {
+        selectVehicle(permission.id_vehiculo, { support: permission.operativo ? 'OPERATIVO' : 'MONITOREO' });
+        $(monitor ? '#tab-monitor' : '#tab-control').click();
+      };
+      cell.append(button('Monitorear', () => open(true)));
+      if (permission.operativo) cell.append(button('Control de soporte', () => open(false)));
+    });
+  section.append(button('Actualizar permisos', showAuthorizedSupport));
 }
 
 async function showDemos(vehicleId = config.vehicleId) {
@@ -484,7 +544,7 @@ function showIdentity() {
   menu.replaceChildren();
   if (!user) return;
   const choices = user.rol === 'ADMINISTRADOR'
-    ? [['Resumen', showSummary], ['Modelos', showModels], ['Unidades', showUnits], ['Compradores', showClients], ['Auditoría', showAudit]]
+    ? [['Resumen', showSummary], ['Modelos', showModels], ['Unidades', showUnits], ['Compradores', showClients], ['Auditoría', showAudit], ['Soporte autorizado', showAuthorizedSupport]]
     : [['Mis vehículos', showMyVehicles]];
   for (const [label, action] of choices) menu.append(button(label, action));
   run(choices[0][1]);

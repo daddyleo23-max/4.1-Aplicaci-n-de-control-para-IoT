@@ -871,3 +871,38 @@ el comprador de prueba se desactiva al terminar. No mueve la unidad 1.
 Pendiente validar SQL/API sobre copia RDS y posteriormente añadir la interfaz
 para consentimiento y adquisición de soporte. El frontend del comprador
 actual sigue siendo compatible; no se publica esta etapa en Pages.
+
+## Validación RDS de soporte operativo e interfaz web (SQL017 / entrega018)
+
+El usuario completó en Windows/RDS las 47 comprobaciones de soporte
+operativo: informe soporte_operativo_02cf04de92dc.json. SQL016 había terminado
+con MySQL0 y conservación=True. Consentimiento, exclusividad, revocación,
+desconexión y caducidad aunque se renueve el canal quedaron verificados.
+
+Se añade Mis vehículos → Autorizar soporte para el comprador: administrador
+real seleccionado desde lista mínima, alcance MONITOREO por defecto,
+OPERATIVO sólo por elección explícita, duración 1–30 minutos, consulta y
+revocación de permisos. El administrador dispone de Soporte autorizado con
+lista de permisos vigentes de SU cuenta, Monitorear y, sólo para permiso
+operativo, Control de soporte. El control utiliza adquisición/renovación/
+liberación ya verificadas. Se ocultan demos privadas y se exige la reserva
+también en el guard local del frontend; servidor sigue siendo la autoridad.
+Los vencimientos se presentan etiquetados en hora de Ciudad de México.
+
+SQL017 añade únicamente sp_soporte_destinatarios (IDs y nombres de admins
+activos, para comprador autenticado) y sp_soporte_mis_permisos (sólo permisos
+vigentes de admin autenticado, comprador/asignación/unidad activos). Nuevas
+rutas GET /soporte/administradores y GET /admin/soporte; no-store y rol
+obligatorios, sin aceptar un administrador ajeno desde querystring. No
+modifica tablas ni las 21 rutinas originales. El frontend anterior mantiene
+compatibilidad. Antes de usar la interfaz nueva aplicar SQL017 y actualizar
+backend, evitando 404 de estas consultas; después sustituir frontend.
+
+Verificación: 109 unitarias correctas, sintaxis de todos los módulos JS y
+migración aplicada en MariaDB local desechable. Comprobación de navegador
+con dos cuentas/pestañas locales: concesión explícita, fila OPERATIVO vigente,
+listado en admin, canal exclusivo autorizado y revocación desde dueño que
+cierra WSS y libera el control del admin. Usa fixtures locales sin hardware,
+no la unidad real de RDS. Falta validar SQL017 e interfaz en Windows/RDS.
+El paquete entrega_018_soporte_web.zip incluye SQL, ejecutor, backend completo
+y ZIP del frontend configurado para localhost8001. Sin credenciales locales.

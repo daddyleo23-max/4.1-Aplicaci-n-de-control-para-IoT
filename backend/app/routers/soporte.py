@@ -1,8 +1,8 @@
 """Consentimiento del comprador para diagnóstico o soporte operativo temporal."""
-from fastapi import APIRouter, Depends, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException, Path, Response
 from pydantic import BaseModel, ConfigDict, Field
 import pymysql
-from app.session_security import require_session
+from app.session_security import require_session, require_admin
 from app.resource_security import resource_context
 from app.services.procedimiento_service import ProcedimientoService
 
@@ -52,3 +52,17 @@ def revoke(id_vehiculo: int = Path(gt=0), id_permiso: int = Path(gt=0), session:
     owner(session, id_vehiculo)
     write('sp_soporte_revocar', (session['id_usuario'], id_vehiculo, id_permiso))
     return {'mensaje': 'Permiso revocado. REST y WSS vuelven a comprobar el consentimiento.'}
+
+
+@router.get('/soporte/administradores')
+def administrators(response: Response, session: dict = Depends(require_session)):
+    if session['rol'] != 'USUARIO':
+        raise HTTPException(403, 'Esta consulta corresponde al comprador que autoriza soporte.')
+    response.headers['Cache-Control'] = 'no-store'
+    return {'administradores': service.ejecutar_consulta('sp_soporte_destinatarios')}
+
+
+@router.get('/admin/soporte')
+def my_support(response: Response, session: dict = Depends(require_admin)):
+    response.headers['Cache-Control'] = 'no-store'
+    return {'permisos': service.ejecutar_consulta('sp_soporte_mis_permisos', (session['id_usuario'],))}

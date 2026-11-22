@@ -1,4 +1,4 @@
-import { config, hasSelectedVehicle } from './config.js';
+import { config, hasSelectedVehicle, selectedSupportScope } from './config.js';
 import { currentUser, currentToken } from './account-session.js';
 import { request } from './api-client.js';
 import { setControlGrant } from './control-session.js';
@@ -13,7 +13,7 @@ let pending = false;
 let heartbeat;
 
 function eligible() {
-  return config.sessionAuth && currentUser()?.rol === 'USUARIO' && hasSelectedVehicle();
+  return config.sessionAuth && (currentUser()?.rol === 'USUARIO' || selectedSupportScope() === 'OPERATIVO') && hasSelectedVehicle();
 }
 function render(message) {
   panel.hidden = !eligible();
@@ -114,7 +114,7 @@ function reset() {
   pending = false;
   old?.socket?.close();
   if (old) void call(`/control/${old.id}/cerrar`, old.token).catch(() => {});
-  render('Monitoreo disponible. Adquiere el control para enviar movimientos o demos.');
+  render(selectedSupportScope() ? 'Soporte autorizado. Adquiere el control para enviar movimientos manuales.' : 'Monitoreo disponible. Adquiere el control para enviar movimientos o demos.');
 }
 document.addEventListener('iot:account-session', reset);
 document.addEventListener('iot:select-vehicle', reset);

@@ -1,11 +1,14 @@
 let selectedVehicleId = 1;
 let vehicleSelected = false;
+let supportScope = null;
+export function selectedSupportScope() { return supportScope; }
 export function hasSelectedVehicle() { return vehicleSelected; }
-export function clearVehicleSelection() { vehicleSelected = false; }
-export function selectVehicle(id) {
+export function clearVehicleSelection() { vehicleSelected = false; supportScope = null; }
+export function selectVehicle(id, { support = null } = {}) {
   if (!Number.isInteger(Number(id)) || Number(id) <= 0) throw new Error('Vehículo inválido.');
   selectedVehicleId = Number(id);
   vehicleSelected = true;
+  supportScope = support;
   document.dispatchEvent(new CustomEvent('iot:select-vehicle'));
 }
 
