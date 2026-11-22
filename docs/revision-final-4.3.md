@@ -91,3 +91,12 @@ colaborativa queda como plantilla con No ejecutado; no se inventan resultados.
 Las comprobaciones locales no cierran todavía los pendientes RDS/Windows,
 publicación HTTPS/WSS, teléfono físico, compañeros y dispositivo supervisado.
 Ver `despliegue-4.3.md` antes de aplicar esta entrega.
+
+
+## Actualización: validación real de copia y preparación de publicación
+
+019 recuperada,020 aprobada,18 pruebas SQL y comprobación HTTP/WS completa
+aprobadas por el alumno. Backend4.3.0 y frontend actualizado confirmados;
+búsqueda MONT-001 deja una fila. Los pendientes de implementación anteriores
+quedan validados en la copia RDS. No implica promoción del esquema original,
+publicación, pruebas de teléfono público ni rondas con compañeros.

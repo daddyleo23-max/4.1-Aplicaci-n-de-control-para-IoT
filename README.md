@@ -11,10 +11,12 @@ CSS, JavaScript modular, FastAPI, REST/WS y MySQL/RDS.
 
 ## Estado real
 
-La ampliación se valida en una copia aislada de RDS mediante paquetes de prueba.
-Las migraciones 001–018 y las entregas previas tienen resultados aportados por
-el alumno. La entrega 022 agrega 019/020 y se comprobó localmente; **su ejecución
-en MySQL/RDS Windows y la publicación de 4.3 siguen pendientes**.
+La ampliación está validada sobre la copia aislada de RDS con migraciones
+001–020. El alumno confirmó recuperación019, migración020, 18 pruebas SQL y
+la prueba HTTP/WS de cierre completa (`cierre_4_3_3f0411c5de52.json`). El backend
+activo devuelve4.3.0 y el frontend muestra dashboard e inventario; el filtro
+MONT deja sólo MONT-001. **La publicación pública de4.3 y sus pruebas finales
+siguen pendientes**.
 
 [Hosting original](https://daddyleo23-max.github.io/4.1-Aplicaci-n-de-control-para-IoT/)
 no se presenta como versión 4.3 aprobada. El `js/config.js` raíz conserva modo

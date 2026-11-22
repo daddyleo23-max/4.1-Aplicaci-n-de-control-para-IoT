@@ -2,10 +2,13 @@
 
 **Si 019 falló con ERROR1832, no repetirla:** seguir [recuperación específica](recuperacion-019.md). La versión de 019 de la entrega inicial022 tenía el orden FK/NOT NULL incorrecto.
 
-Estado: preparado para validar en copia. La URL pública no fue actualizada ni
-comprobada en esta entrega. Las pruebas locales usan MariaDB 12.3.2 sobre un
-esquema reconstruido; el destino real es MySQL 8.4.9 en RDS. Aprobar RDS es
-obligatorio antes de promover. No presentar resultados locales como AWS.
+Estado: validado en la copia RDS del alumno. Recuperación019 correcta,
+020 aplicada conservando datos y 18 pruebas SQL correctas. El informe
+`cierre_4_3_3f0411c5de52.json` confirma las comprobaciones HTTP/WS de cierre.
+Backend4.3.0 y frontend actualizado confirmados por el alumno; búsqueda de
+MONT-001 validada. La URL pública no ha sido puesta en servicio como4.3 ni
+validada en esta etapa. Las pruebas locales adicionales no sustituyen esa
+comprobación pública.
 
 ## Entrega 022 en Windows
 

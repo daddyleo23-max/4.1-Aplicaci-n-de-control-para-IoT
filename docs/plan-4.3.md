@@ -1099,3 +1099,24 @@ MySQL8.4.13 (modo NO_ENGINE_SUBSTITUTION), FK vigente, datos conservados y
 reintento sin DDL; 019 corregida/020 y 18 pruebas SQL de empresa aprobadas.
 La aplicación real en la copia RDS del usuario sigue pendiente de su informe.
 Detalles y comandos en recuperacion-019.md.
+
+
+## Validación de entrega022 en la copia real RDS
+
+El alumno confirmó:
+
+- recuperación019: `recuperacion_019_20261122-184533-507868.json`, FK/columna/rutinas verificadas y todos los datos conservados;
+- migración020: `migracion_020_20261122-184730-192251.json`, salida0 y conservación correcta;
+- 18 pruebas SQL de empresa: `empresa_sql_20261122-184752-223688.json`, todas correctas y ROLLBACK;
+- HTTP/WS cierre: `cierre_4_3_3f0411c5de52.json`, secuencia completa correcta, fixtures privados/inactivos;
+- backend4.3.0 tras comprobar hashes y sustituir los archivos anteriores que aún atendían8001;
+- interfaz actualizada: ADMINISTRACIÓN, métricas, inventario de13 filas y buscador;
+- captura con búsqueda MONT: una sola fila MONT-001.
+
+Los fallos previos quedan diferenciados: DDL019 se recuperó; el primer
+HTTP201 sin reserva provenía de archivos anteriores, confirmado por hashes
+concretos. No se repiten migraciones ni se atribuyen esos fallos a la versión
+final validada. Quedan selección del esquema/datos finales, configuración del
+servicio público/Caddy, HTTPS/WSS, móvil y evidencias colaborativas. Se entrega
+diagnóstico Windows de sólo lectura para conocer el despliegue vigente sin
+leer secretos ni detener servicios.
