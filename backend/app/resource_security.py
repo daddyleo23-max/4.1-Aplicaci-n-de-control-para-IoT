@@ -73,6 +73,8 @@ async def authorize_resources(
     }
     if (route == "/vehiculos" or admin_write) and not is_admin:
         raise HTTPException(403, "Se requiere el rol Administrador para esta operación.")
+    if write and route in {"/vehiculos", "/vehiculos/{id_vehiculo}/actualizar"}:
+        raise HTTPException(409, "Gestiona el inventario mediante /admin/unidades para conservar sus validaciones y auditoría.")
     mapping = (("id_vehiculo", "vehiculo"), ("id_comando", "comando"),
                ("id_demo", "demo"), ("id_demo_movimiento", "paso"))
     expected_unit = None

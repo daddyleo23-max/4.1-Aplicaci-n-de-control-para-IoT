@@ -201,21 +201,37 @@ async function showUnits() {
   if (version !== screenVersion) return;
   const section = panel('Unidades');
   const editor = node('div');
-  section.append(editor);
+  const editUnit = (unit = {}) => {
+    editor.replaceChildren();
+    form(editor, [
+      { name: 'nombre', label: 'Nombre de la unidad', value: unit.nombre, maxLength: 80 },
+      { name: 'id_modelo', label: 'Modelo comercial', value: unit.id_modelo,
+        options: models.modelos.filter(m => m.activo).map(m => [m.id_modelo, m.nombre]) },
+      { name: 'identificador_unidad', label: 'Identificador único', value: unit.identificador_unidad, maxLength: 80 },
+      { name: 'descripcion', label: 'Descripción', value: unit.descripcion, required: false, maxLength: 255 },
+      { name: 'microcontrolador', label: 'Microcontrolador', value: unit.microcontrolador, required: false, maxLength: 50 },
+      ...(unit.id_vehiculo ? [{ name: 'activo', label: 'Estado', value: unit.activo ? '1' : '0',
+        options: [['1', 'Activa'], ['0', 'Inactiva']] }] : []),
+    ], unit.id_vehiculo ? 'Guardar unidad' : 'Registrar unidad', async values => {
+      values.id_modelo = Number(values.id_modelo);
+      if (unit.id_vehiculo) values.activo = values.activo === '1';
+      await fetchData(unit.id_vehiculo ? '/admin/unidades/' + unit.id_vehiculo + '/actualizar' : '/admin/unidades',
+        { method: 'POST', body: values });
+      await showUnits();
+    });
+    editor.append(button('Cancelar edición', () => editor.replaceChildren()));
+  };
+  section.append(button('Nueva unidad', () => editUnit()), editor);
+  const searchLabel = node('label', 'Buscar en las unidades cargadas');
+  const search = node('input');
+  search.type = 'search';
+  searchLabel.append(search);
+  section.append(searchLabel);
   table(section, [['id_vehiculo', 'ID'], ['nombre', 'Unidad'], ['identificador_unidad', 'Identificador'],
     ['nombre_modelo', 'Modelo'], ['estado_comercial', 'Estado'], ['propietario', 'Propietario']],
   units.unidades, (unit, cell) => {
-    cell.append(button('Configurar', () => {
-      editor.replaceChildren();
-      form(editor, [
-        { name: 'id_modelo', label: 'Modelo', value: unit.id_modelo, options: models.modelos.filter(m => m.activo).map(m => [m.id_modelo, m.nombre]) },
-        { name: 'identificador_unidad', label: 'Identificador de unidad', value: unit.identificador_unidad, maxLength: 80 },
-      ], 'Guardar configuración', async values => {
-        values.id_modelo = Number(values.id_modelo);
-        await fetchData('/admin/unidades/' + unit.id_vehiculo + '/configurar', { method: 'POST', body: values });
-        await showUnits();
-      });
-    }), button('Asignar', () => {
+    cell.append(button('Editar', () => editUnit(unit)));
+    if (unit.activo) cell.append(button('Asignar', () => {
       editor.replaceChildren();
       form(editor, [{ name: 'id_usuario', label: 'Comprador', value: unit.id_propietario,
         options: clients.clientes.filter(c => c.activo).map(c => [c.id_usuario, c.nombre + ' · ' + c.correo]) }],
@@ -227,6 +243,12 @@ async function showUnits() {
     }));
     if (!unit.id_propietario && unit.activo) cell.append(button('Controlar', () => selectForControl(unit)),
       button('Demos', () => showDemos(unit.id_vehiculo)));
+  });
+  search.addEventListener('input', () => {
+    const term = search.value.trim().toLocaleLowerCase('es');
+    for (const row of section.querySelectorAll('tbody tr')) {
+      row.hidden = !row.textContent.toLocaleLowerCase('es').includes(term);
+    }
   });
 }
 

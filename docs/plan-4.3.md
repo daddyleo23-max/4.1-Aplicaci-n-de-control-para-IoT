@@ -297,3 +297,55 @@ ZIP íntegro y sin auth.local.js, pantalla de acceso en escritorio y viewport
 con el backend apagado. La revisión horizontal posterior quedó interrumpida
 por desconexión del servidor de vista previa. No se verificaron formularios
 autenticados localmente contra el servidor Windows.
+
+## Validación del frontend comunicada por el usuario
+
+El usuario compartió capturas de login administrador, resumen, modelos,
+unidades, compradores y auditoría con datos reales de la copia. Como comprador
+propietario confirmó listado MONT-001, carga del control y demos. Confirmó
+crear una demo desde la web, modificar la duración, recuperar el cambio y
+ejecutarla con evento DEMO finalizada. Comprador B conserva lista vacía.
+El historial de diez individuales sigue el contrato previo: los pasos internos
+de demos no se insertan como individuales. La consigna 9.5 exige respetarlo.
+Los ajustes visuales se posponen por indicación del usuario.
+
+## Entrega 009 de inventario preparada
+
+La revisión de requisitos 7.2/7.5 y P02 detectó que faltaba el alta de unidad
+comercial desde la aplicación. 009 crea sp_admin_crear_unidad y
+sp_admin_actualizar_unidad y amplía la consulta administrativa con descripción
+y microcontrolador originales. No altera las seis tablas ni los 21 SP previos.
+El identificador sigue protegido por el UNIQUE de 001. Alta/edición y auditoría
+se confirman en una misma transacción. El campo modelo legacy conserva hasta
+80 caracteres; la referencia id_modelo y nombre_modelo comercial es completa.
+
+POST /admin/unidades registra nombre, id_modelo, identificador_unidad,
+descripcion y microcontrolador y devuelve id_vehiculo con HTTP 201.
+POST /admin/unidades/{id}/actualizar recibe además activo, realiza edición
+completa y baja lógica con HTTP 200. Admin y validación Pydantic protegen ambas.
+La UI incorpora Nueva unidad, Editar, estado activo/inactivo y búsqueda sobre
+las 100 unidades cargadas. La paginación REST preexistente se conserva;
+la navegación de páginas y filtros completos siguen pendientes en la UI.
+
+Las unidades nuevas no heredan comandos ni declaran conectividad física.
+Una unidad asignada conserva modelo y estado activo; la baja de unidades
+vendidas requiere completar la detención/reservas y el flujo comercial.
+No se cambia el modelo de unidades con comandos/demos sin revisar capacidades.
+Se rechaza editar durante una demo en ejecución. La ruta antigua /configurar
+queda obsoleta y responde 409 hacia el documento completo. En modo sesiones
+las escrituras legacy /vehiculos remiten a /admin/unidades para impedir
+eludir estas validaciones. El modo legacy conserva su comportamiento.
+
+43 pruebas locales del backend pasaron, incluidas nueve de inventario.
+La validación SQL real de 009 queda pendiente. probar_inventario_http.py crea
+un modelo, dos unidades y un comprador nuevos; comprueba duplicados,
+persistencia, permisos, bajas, rechazo de asignación inactiva y auditoría.
+Deja los registros nuevos inactivos y no modifica la unidad 1 ni sus comandos.
+Guarda resultados privados en respaldos_rds y cierra las sesiones de prueba.
+
+Recuperación ante DDL parcial: conservar informe del ejecutor y examinar los
+procedimientos nuevos y sp_admin_listar_unidades antes de reintentar. La
+definición anterior de listado está en 003_gestion_comercial.up.sql; restaurar
+sólo esa rutina con el backend/frontend anterior permite volver a la versión
+previa. No ejecutar 003 completa sobre una base ya migrada. La migración no
+cambia filas, pero no se confía en ROLLBACK para deshacer sus CREATE/DROP.

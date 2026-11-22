@@ -1,4 +1,4 @@
-"""Aplicar migración 001 o 002 y comprobar los datos originales en la copia."""
+"""Aplicar una migración versionada y comprobar los datos originales en la copia."""
 
 import argparse
 from datetime import datetime, timezone
@@ -102,9 +102,13 @@ def main():
             "008", BASE_TABLES | {"migraciones_iot", "usuarios", "modelos",
                                  "asignaciones", "sesiones", "auditoria"},
         ),
+        "009_inventario_unidades.up.sql": (
+            "009", BASE_TABLES | {"migraciones_iot", "usuarios", "modelos",
+                                 "asignaciones", "sesiones", "auditoria"},
+        ),
     }
     if sql.name not in migrations:
-        raise SystemExit("Este ejecutor admite las migraciones 001 a 008.")
+        raise SystemExit("Este ejecutor admite las migraciones 001 a 009.")
     version, expected_tables = migrations[sql.name]
     root = Path.cwd()
     sys.path.insert(0, str(root))

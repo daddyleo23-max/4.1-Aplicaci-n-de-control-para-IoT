@@ -5,6 +5,8 @@ import pymysql
 from app.passwords import hash_password
 from app.session_security import require_admin
 from app.services.procedimiento_service import ProcedimientoService
+from app.services.demo_service import demo_service
+import asyncio
 
 
 router = APIRouter(prefix="/admin", tags=["Administración 4.3"])
@@ -43,6 +45,17 @@ class AssignmentRequest(BaseModel):
     id_usuario: int = Field(gt=0)
 
 
+class UnitRequest(UnitConfiguration):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    nombre: str = Field(min_length=1, max_length=80)
+    descripcion: str = Field(default="", max_length=255)
+    microcontrolador: str = Field(default="", max_length=50)
+
+
+class UnitUpdate(UnitRequest):
+    activo: bool
+
+
 class ModelUpdate(ModelRequest):
     activo: bool
 
@@ -68,7 +81,7 @@ def create(procedure, parameters):
         return service.ejecutar_consulta_transaccional(procedure, parameters)[0]
     except pymysql.IntegrityError as error:
         if error.args[0] == 1062:
-            raise HTTPException(409, "Ya existe un registro con ese nombre o correo.") from error
+            raise HTTPException(409, "Ya existe un registro con ese nombre, correo o identificador.") from error
         raise
     except pymysql.OperationalError as error:
         if error.args[0] == 1644:
@@ -114,11 +127,33 @@ def units(limite: int = Query(20, ge=1, le=100),
             "limite": limite, "offset": offset}
 
 
-@router.post("/unidades/{id_vehiculo}/configurar")
+@router.post("/unidades/{id_vehiculo}/configurar", deprecated=True)
 def configure_unit(id_vehiculo: int, data: UnitConfiguration,
                    session: dict = Depends(require_admin)):
-    return create("sp_admin_configurar_unidad",
-                  (session["id_usuario"], id_vehiculo, data.id_modelo, data.identificador_unidad))
+    raise HTTPException(409, "Utiliza /admin/unidades/{id_vehiculo}/actualizar con los datos completos de la unidad.")
+
+
+@router.post("/unidades", status_code=201)
+def create_unit(data: UnitRequest, session: dict = Depends(require_admin)):
+    return create("sp_admin_crear_unidad", (
+        session["id_usuario"], data.nombre, data.id_modelo, data.identificador_unidad,
+        data.descripcion, data.microcontrolador,
+    ))
+
+
+@router.post("/unidades/{id_vehiculo}/actualizar")
+async def update_unit(id_vehiculo: int, data: UnitUpdate,
+                      session: dict = Depends(require_admin)):
+    if id_vehiculo <= 0:
+        raise HTTPException(422, "El identificador debe ser positivo.")
+    async with demo_service.bloqueo:
+        task = demo_service.tareas.get(id_vehiculo)
+        if task is not None and not task.done():
+            raise HTTPException(409, "Espera o cancela la demo antes de editar la unidad.")
+        return await asyncio.to_thread(create, "sp_admin_actualizar_unidad", (
+            session["id_usuario"], id_vehiculo, data.nombre, data.id_modelo,
+            data.identificador_unidad, data.descripcion, data.microcontrolador, data.activo,
+        ))
 
 
 @router.post("/unidades/{id_vehiculo}/asignar")
