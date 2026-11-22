@@ -1082,3 +1082,20 @@ fixtures locales, no evidencia pública ni de hardware.
 Documentación consolidada en arquitectura-4.3, contratos-4.3, despliegue-4.3 y
 matriz-4.3. RDS/Windows 019–020 y recorrido público siguen pendientes. No se
 publica automáticamente ni se modifica el esquema original del usuario.
+
+
+## Recuperación de 019 ante ERROR1832 en RDS
+
+El usuario informó el fallo de cambio NOT NULL con FK ya creada. La salida
+confirma DDL parcial y datos originales conservados, 020 bloqueada por versiones
+y prueba SQL revertida. Se corrige el orden de 019 para instalaciones nuevas y
+se entrega recuperación específica validada contra informe/SQL original,
+metadatos, rutinas y hashes de datos. No se repite el script completo sobre
+la columna existente. Se actualiza la guía para detener la secuencia si falla
+un comando nativo de PowerShell.
+
+Verificación: 132 unitarias; error1832 reproducido y recuperado con datos en
+MySQL8.4.13 (modo NO_ENGINE_SUBSTITUTION), FK vigente, datos conservados y
+reintento sin DDL; 019 corregida/020 y 18 pruebas SQL de empresa aprobadas.
+La aplicación real en la copia RDS del usuario sigue pendiente de su informe.
+Detalles y comandos en recuperacion-019.md.

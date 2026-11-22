@@ -23,6 +23,8 @@ API localhost 8001. No subir ese ZIP de pruebas a GitHub Pages.
 
 ## Documentación y ejecución
 
+Si la entrega022 falló en 019 con ERROR1832, usar la [recuperación específica](docs/recuperacion-019.md); no repetir la migración completa sobre el estado parcial.
+
 - [Arquitectura, ER y roles](docs/arquitectura-4.3.md)
 - [Inventario de contratos antes/después](docs/inventario-contratos-4.3.md)
 - [Contratos HTTP/WS](docs/contratos-4.3.md) y [OpenAPI generado](docs/openapi-4.3.json)

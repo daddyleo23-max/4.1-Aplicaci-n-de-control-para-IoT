@@ -1,5 +1,7 @@
 # Puesta en servicio y recuperación 4.3
 
+**Si 019 falló con ERROR1832, no repetirla:** seguir [recuperación específica](recuperacion-019.md). La versión de 019 de la entrega inicial022 tenía el orden FK/NOT NULL incorrecto.
+
 Estado: preparado para validar en copia. La URL pública no fue actualizada ni
 comprobada en esta entrega. Las pruebas locales usan MariaDB 12.3.2 sobre un
 esquema reconstruido; el destino real es MySQL 8.4.9 en RDS. Aprobar RDS es
@@ -12,12 +14,18 @@ liberar controles/Invitados; detener backend 8001 con Ctrl+C. Mantener intacto e
 backend original. Desde `C:\practica_2_6_iot`:
 
 ```powershell
-$dump = Get-ChildItem 'C:\mysql-tools' -Filter mysqldump.exe -Recurse | Select-Object -First 1 -ExpandProperty FullName
-$mysql = Get-ChildItem 'C:\mysql-tools' -Filter mysql.exe -Recurse | Select-Object -First 1 -ExpandProperty FullName
-.\.venv\Scripts\python.exe C:\entrega_022\respaldar_rds.py --mysqldump "$dump" --copia 'iot_prueba_20261121_205613_303067'
-.\.venv\Scripts\python.exe C:\entrega_022\migrar_copia_rds.py --mysql "$mysql" --sql 'C:\entrega_022\019_control_empresa.up.sql' --copia 'iot_prueba_20261121_205613_303067'
-.\.venv\Scripts\python.exe C:\entrega_022\migrar_copia_rds.py --mysql "$mysql" --sql 'C:\entrega_022\020_catalogo_resumen.up.sql' --copia 'iot_prueba_20261121_205613_303067'
-.\.venv\Scripts\python.exe C:\entrega_022\probar_control_empresa_sql.py --copia 'iot_prueba_20261121_205613_303067'
+& {
+    $dump = Get-ChildItem 'C:\mysql-tools' -Filter mysqldump.exe -Recurse | Select-Object -First 1 -ExpandProperty FullName
+    $mysql = Get-ChildItem 'C:\mysql-tools' -Filter mysql.exe -Recurse | Select-Object -First 1 -ExpandProperty FullName
+    .\.venv\Scripts\python.exe C:\entrega_022\respaldar_rds.py --mysqldump "$dump" --copia 'iot_prueba_20261121_205613_303067'
+    if ($LASTEXITCODE -ne 0) { throw "Paso fallido: no se ejecutan los siguientes." }
+    .\.venv\Scripts\python.exe C:\entrega_022\migrar_copia_rds.py --mysql "$mysql" --sql 'C:\entrega_022\019_control_empresa.up.sql' --copia 'iot_prueba_20261121_205613_303067'
+    if ($LASTEXITCODE -ne 0) { throw "Paso fallido: no se ejecutan los siguientes." }
+    .\.venv\Scripts\python.exe C:\entrega_022\migrar_copia_rds.py --mysql "$mysql" --sql 'C:\entrega_022\020_catalogo_resumen.up.sql' --copia 'iot_prueba_20261121_205613_303067'
+    if ($LASTEXITCODE -ne 0) { throw "Paso fallido: no se ejecutan los siguientes." }
+    .\.venv\Scripts\python.exe C:\entrega_022\probar_control_empresa_sql.py --copia 'iot_prueba_20261121_205613_303067'
+    if ($LASTEXITCODE -ne 0) { throw "Paso fallido: no se ejecutan los siguientes." }
+}
 ```
 
 Cada comando SQL/respaldo pide **usuario admin de RDS**, no correo de la app.

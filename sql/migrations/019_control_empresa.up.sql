@@ -11,10 +11,10 @@ CALL sp_preflight_019()$$
 DROP PROCEDURE sp_preflight_019$$
 DELIMITER ;
 ALTER TABLE sesiones_control MODIFY id_asignacion BIGINT NULL,
- ADD COLUMN id_vehiculo INT NULL,
- ADD CONSTRAINT fk_control_unidad FOREIGN KEY(id_vehiculo) REFERENCES vehiculos(id_vehiculo) ON DELETE RESTRICT;
+ ADD COLUMN id_vehiculo INT NULL;
 UPDATE sesiones_control c JOIN asignaciones a ON a.id_asignacion=c.id_asignacion SET c.id_vehiculo=a.id_vehiculo;
 ALTER TABLE sesiones_control MODIFY id_vehiculo INT NOT NULL;
+ALTER TABLE sesiones_control ADD CONSTRAINT fk_control_unidad FOREIGN KEY(id_vehiculo) REFERENCES vehiculos(id_vehiculo) ON DELETE RESTRICT;
 DELIMITER $$
 DROP PROCEDURE IF EXISTS sp_control_adquirir$$
 CREATE PROCEDURE sp_control_adquirir(IN p_sesion BIGINT, IN p_unidad INT)
