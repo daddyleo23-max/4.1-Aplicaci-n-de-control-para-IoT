@@ -646,3 +646,15 @@ comprobar esta interfaz en el Windows del usuario. Las unidades generadas
 por las pruebas HTTP anteriores quedaron inactivas: un catálogo vacío es
 correcto hasta preparar una unidad de exhibición habilitada. La unidad 1
 asignada al comprador no se convierte automáticamente en exhibición.
+
+### Preparación del recorrido web en Windows
+
+`tools/preparar_invitado_web.py` crea un modelo y una unidad nuevos sin
+hardware, registra ADELANTE/DETENER, publica el modelo y habilita exhibición
+con prueba de 60 s y pulsos de 100 ms. No envía movimientos. Guarda IDs y
+metadatos en un informe sin credenciales; los registros permanecen activos
+para la comprobación manual del usuario. `--retirar INFORME` verifica los
+registros, rechaza unidad 1 y unidades con propietario, cierra la reserva,
+retira publicación y aplica baja lógica conservando auditoría. Se comprobó
+con API simulada el recorrido de preparación y retiro, IDs de comandos y
+rechazo de unidad 1. La ejecución real en Windows queda pendiente.
