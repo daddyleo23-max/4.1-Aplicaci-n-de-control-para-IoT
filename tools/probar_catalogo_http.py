@@ -1,5 +1,6 @@
 """Pruebas 010 en localhost:8001. No envía movimientos ni abre reservas."""
 from datetime import datetime, timezone
+import argparse
 import getpass
 import json
 from pathlib import Path
@@ -23,6 +24,9 @@ def main():
     results = []
     report = {"destino": BASE, "resultados": results}
     unit_body = None
+    model_private = False
+    unit_inactive = False
+    model_inactive = False
 
     def check(label, expected, method, path, body=None, auth=None):
         status, data = request(method, path, body, auth)
@@ -52,6 +56,7 @@ def main():
         model_id = check("Crear modelo privado de prueba", 201, "POST", "/admin/modelos",
                          {"nombre": name, "descripcion": "Prueba de catálogo 010"}, token)["id_modelo"]
         report["id_modelo_prueba"] = model_id
+        model_private = True
         verify("Modelo nuevo oculto al público", find_model() is None)
         unit_body = {"nombre": "Unidad catálogo " + suffix, "id_modelo": model_id,
                      "identificador_unidad": "CAT-" + suffix,
@@ -63,6 +68,7 @@ def main():
         check("Rechazar publicación sin sesión", 401, "POST",
               f"/admin/modelos/{model_id}/publicacion", {"publico": True})
         check("Publicar modelo", 200, "POST", f"/admin/modelos/{model_id}/publicacion", {"publico": True}, token)
+        model_private = False
         model = find_model()
         verify("Modelo visible y unidad disponible fuera de exhibición", model is not None and model["unidades_exhibicion"] == 0)
         check("Marcar unidad de prueba para exhibición", 200, "POST",
@@ -78,12 +84,15 @@ def main():
         after = check("Verificar inventario tras rechazo", 200, "GET", "/admin/unidades?limite=100", auth=token)
         verify("Unidad 1 conservada sin cambios", next(row for row in after["unidades"] if row["id_vehiculo"] == 1) == owned)
         check("Retirar modelo del catálogo", 200, "POST", f"/admin/modelos/{model_id}/publicacion", {"publico": False}, token)
+        model_private = True
         verify("Modelo retirado deja de ser público", find_model() is None)
         check("Retirar exhibición de prueba", 200, "POST", f"/admin/unidades/{unit_id}/exhibicion", {"habilitada": False}, token)
         check("Desactivar unidad de prueba", 200, "POST", f"/admin/unidades/{unit_id}/actualizar",
               {**unit_body, "activo": False}, token)
+        unit_inactive = True
         check("Desactivar modelo de prueba", 200, "POST", f"/admin/modelos/{model_id}/actualizar",
               {"nombre": name, "descripcion": "Prueba finalizada", "activo": False}, token)
+        model_inactive = True
         check("Rechazar publicación de modelo inactivo", 409, "POST",
               f"/admin/modelos/{model_id}/publicacion", {"publico": True}, token)
         audit = check("Consultar auditoría", 200, "GET", "/admin/auditoria?limite=100", auth=token)
@@ -92,11 +101,11 @@ def main():
     finally:
         cleanup = []
         operations = []
-        if model_id:
+        if model_id and not model_private:
             operations.append((f"/admin/modelos/{model_id}/publicacion", {"publico": False}))
-        if unit_id:
+        if unit_id and not unit_inactive:
             operations.append((f"/admin/unidades/{unit_id}/actualizar", {**unit_body, "activo": False}))
-        if model_id:
+        if model_id and not model_inactive:
             operations.append((f"/admin/modelos/{model_id}/actualizar",
                                {"nombre": name, "descripcion": "Prueba finalizada", "activo": False}))
         for path, body in operations:
@@ -121,5 +130,70 @@ def main():
     print("Comprobaciones del catálogo completadas. Registros nuevos privados e inactivos.")
 
 
+def verify_report(report_path):
+    """Comprobar el resultado previo sin crear ni modificar modelo o unidad."""
+    source = Path(report_path).resolve(strict=True)
+    prior = json.loads(source.read_text(encoding="utf-8-sig"))
+    model_id = prior.get("id_modelo_prueba")
+    unit_id = prior.get("id_unidad_prueba")
+    if not all(type(value) is int and value > 0 for value in (model_id, unit_id)):
+        raise SystemExit("El informe no contiene identificadores de prueba válidos.")
+    if prior.get("destino") != BASE:
+        raise SystemExit("El informe debe corresponder a localhost:8001.")
+    print("Comprobación de registros existentes. Destino:", BASE)
+    for item in prior.get("limpieza", []):
+        print("Limpieza anterior:", item.get("ruta"), "HTTP", item.get("http", "sin respuesta"))
+    email = input("Correo del administrador de la aplicación: ").strip()
+    password = getpass.getpass("Contraseña de aplicación (entrada oculta): ")
+    status, login = request("POST", "/auth/login", {"correo": email, "password": password})
+    password = None
+    if status != 200 or login.get("usuario", {}).get("rol") != "ADMINISTRADOR":
+        raise SystemExit("No se pudo iniciar sesión como administrador.")
+    token = login["access_token"]
+
+    def find(path, key, id_field, identifier):
+        offset = 0
+        while True:
+            status, data = request("GET", f"{path}?limite=100&offset={offset}", token=token)
+            if status != 200:
+                raise RuntimeError(f"No se pudo consultar {key}: HTTP {status}")
+            rows = data[key]
+            match = next((row for row in rows if row[id_field] == identifier), None)
+            if match is not None or len(rows) < 100:
+                return match
+            offset += 100
+
+    try:
+        model = find("/admin/modelos", "modelos", "id_modelo", model_id)
+        unit = find("/admin/unidades", "unidades", "id_vehiculo", unit_id)
+        checks = {
+            "Modelo de prueba identificado": bool(model and model["nombre"].startswith("Catalogo HTTP ")),
+            "Modelo privado e inactivo": bool(model and model.get("publico") == 0 and model["activo"] == 0),
+            "Unidad de prueba identificada": bool(unit and unit["id_modelo"] == model_id
+                                                  and str(unit["identificador_unidad"]).startswith("CAT-")),
+            "Unidad inactiva y sin propietario": bool(unit and unit["activo"] == 0
+                and unit["estado_comercial"] == "INACTIVO" and unit["id_propietario"] is None),
+        }
+        for label, okay in checks.items():
+            print(label + (": CORRECTO" if okay else ": INCORRECTO"))
+        result = {"informe_origen": source.name, "destino": BASE,
+                  "fecha_utc": datetime.now(timezone.utc).isoformat(),
+                  "id_modelo": model_id, "id_unidad": unit_id, "comprobaciones": checks}
+        target = source.with_name(source.stem + ".estado_verificado.json")
+        target.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+        print("Verificación guardada en", target)
+        if not all(checks.values()):
+            raise RuntimeError("Hay registros que requieren revisión. No se modificó el inventario.")
+        print("Estado final correcto. No se crearon ni modificaron registros de inventario.")
+    finally:
+        request("POST", "/auth/logout", token=token)
+
+
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--verificar-informe")
+    args = parser.parse_args()
+    if args.verificar_informe:
+        verify_report(args.verificar_informe)
+    else:
+        main()

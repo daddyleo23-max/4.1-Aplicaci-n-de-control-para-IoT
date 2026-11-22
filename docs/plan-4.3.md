@@ -400,3 +400,25 @@ y frontend anteriores pueden restaurarse conservando la columna adicional;
 el listado administrativo previo está definido en 003. No eliminar registros
 ni volver a ejecutar migraciones anteriores completas. El despliegue público
 de esta ampliación continúa pendiente de completar el flujo de Invitados.
+
+## Ejecución real 010 y corrección del script
+
+El usuario aplicó 010 con MySQL 0 y conservación=True. Informe
+migracion_010_20261122-031031-050600.json. probar_catalogo_http.py pasó todas
+las comprobaciones funcionales, incluidas publicación/retiro, conteos,
+privacidad, rechazo de exhibición de unidad 1 asignada sin cambios, bajas
+de unidad/modelo y auditoría. Informe http_catalogo_eec461b73ebc.json.
+
+El script terminó con error de limpieza porque su bloque finally repetía
+la baja de la unidad después de haber desactivado el modelo. La rutina 009
+exige modelo activo y esa escritura redundante puede responder 409.
+La corrección registra las bajas exitosas y evita repetirlas. No modifica
+el backend ni necesita repetir las migraciones. Tres pruebas de regresión
+con estado controlado verifican la secuencia completa y la comprobación de
+resultados anteriores sin escrituras de inventario. La suite suma 56 pruebas.
+
+La opción --verificar-informe consulta los IDs del informe anterior y guarda
+un archivo .estado_verificado.json con publicación/actividad del modelo y
+actividad, estado comercial y ausencia de propietario de la unidad de prueba.
+Sólo inicia/cierra una sesión y lee inventario; no crea ni modifica esos
+registros. La confirmación real del estado final está pendiente de esta lectura.
