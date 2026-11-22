@@ -59,6 +59,9 @@ async def authorize_resources(
         "/vehiculos", "/vehiculos/{id_vehiculo}",
         "/vehiculos/{id_vehiculo}/actualizar", "/vehiculos/{id_vehiculo}/eliminar",
     }
+    if write and (route.startswith("/demos/") or route.startswith("/demo-movimientos/")
+                  or route == "/vehiculos/{id_vehiculo}/demos"):
+        raise HTTPException(409, "Guarda la secuencia completa mediante el editor /mis-demos.")
     # Las bajas de unidades y comandos requieren conservar el historial.
     if write and route in {"/vehiculos/{id_vehiculo}/eliminar", "/comandos/{id_comando}/eliminar"}:
         raise HTTPException(409, "Utiliza la actualización con activo=false para la baja lógica.")
@@ -77,6 +80,14 @@ async def authorize_resources(
         if field not in params:
             continue
         unit = resource_context(kind, int(params[field]))
+        if kind in ("demo", "paso"):
+            if kind == "paso":
+                raise HTTPException(409, "Utiliza el editor de secuencias.")
+            visible = service.ejecutar_consulta(
+                "sp_editor_detalle_demo", (session["id_usuario"], int(params[field])),
+            )
+            if not visible:
+                raise HTTPException(404, "Demo no encontrada o sin acceso.")
         if expected_unit is not None and unit["id_vehiculo"] != expected_unit:
             raise HTTPException(403, "Los recursos pertenecen a unidades diferentes.")
         expected_unit = unit["id_vehiculo"]

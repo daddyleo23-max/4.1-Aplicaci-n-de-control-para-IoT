@@ -11,6 +11,7 @@ from app.routers import websocket
 from app.routers.autenticacion import router as autenticacion_router
 from app.routers.administracion import router as administracion_router
 from app.routers.cuenta import router as cuenta_router
+from app.routers.editor_demos import router as editor_demos_router
 from app.resource_security import authorize_resources
 
 
@@ -50,6 +51,7 @@ app.include_router(websocket.router)
 app.include_router(autenticacion_router)
 app.include_router(administracion_router)
 app.include_router(cuenta_router)
+app.include_router(editor_demos_router)
 
 
 @app.get("/health/db")

@@ -73,7 +73,9 @@ class ResourceAccessTests(unittest.TestCase):
         with self.identity(6):
             response = self.client.get("/demos/1/movimientos", headers=self.headers)
         self.assertEqual(response.status_code, 403)
-        resource_security.service.ejecutar_consulta.assert_called_with("sp_acceso_recurso", ("demo", 1))
+        from unittest.mock import call
+        self.assertIn(call("sp_acceso_recurso", ("demo", 1)),
+                      resource_security.service.ejecutar_consulta.call_args_list)
 
     def test_other_buyer_websocket_closed_before_state(self):
         with self.identity(6):

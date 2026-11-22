@@ -5,6 +5,8 @@ import pymysql
 
 from app.services.procedimiento_service import ProcedimientoService
 from app.services.demo_service import demo_service
+from app.resource_security import sessions_enabled
+from fastapi import Request
 
 router = APIRouter(tags=["Historial y demos"])
 servicio = ProcedimientoService()
@@ -36,12 +38,14 @@ def obtener_historial(id_vehiculo: int):
 
 
 @router.get("/vehiculos/{id_vehiculo}/demos")
-def obtener_demos(id_vehiculo: int):
+def obtener_demos(id_vehiculo: int, request: Request):
     try:
-        demos = servicio.ejecutar_consulta(
-            "sp_obtener_demos",
-            (id_vehiculo,),
-        )
+        if sessions_enabled():
+            demos = servicio.ejecutar_consulta(
+                "sp_editor_listar_demos", (request.state.session["id_usuario"], id_vehiculo),
+            )
+        else:
+            demos = servicio.ejecutar_consulta("sp_obtener_demos", (id_vehiculo,))
 
         return {
             "id_vehiculo": id_vehiculo,

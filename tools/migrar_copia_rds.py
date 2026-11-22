@@ -36,6 +36,10 @@ def snapshot(cursor, schema):
             columns = [column for column in columns if column not in {
                 "id_modelo", "identificador_unidad", "estado_comercial",
             }]
+        if name == "demos":
+            columns = [column for column in columns if column not in {
+                "id_propietario", "tipo", "revision",
+            }]
         cursor.execute(
             "SELECT " + ", ".join(map(quote, columns)) +
             " FROM " + quote(schema) + "." + quote(name) +
@@ -55,7 +59,7 @@ def snapshot(cursor, schema):
     )
     data["procedimientos"] = [
         row for row in cursor.fetchall()
-        if not row["ROUTINE_NAME"].startswith(("sp_auth_", "sp_admin_", "sp_usuario_", "sp_acceso_"))
+        if not row["ROUTINE_NAME"].startswith(("sp_auth_", "sp_admin_", "sp_usuario_", "sp_acceso_", "sp_editor_"))
     ]
     return data
 
@@ -90,9 +94,13 @@ def main():
             "006", BASE_TABLES | {"migraciones_iot", "usuarios", "modelos",
                                  "asignaciones", "sesiones", "auditoria"},
         ),
+        "007_editor_demos.up.sql": (
+            "007", BASE_TABLES | {"migraciones_iot", "usuarios", "modelos",
+                                 "asignaciones", "sesiones", "auditoria"},
+        ),
     }
     if sql.name not in migrations:
-        raise SystemExit("Este ejecutor admite las migraciones 001 a 006.")
+        raise SystemExit("Este ejecutor admite las migraciones 001 a 007.")
     version, expected_tables = migrations[sql.name]
     root = Path.cwd()
     sys.path.insert(0, str(root))
@@ -118,17 +126,13 @@ def main():
                     "La copia no tiene el conjunto de tablas previo esperado. "
                     "Si hubo un intento anterior, revisa su resultado antes de continuar."
                 )
-            if version in ("002", "003", "004", "005", "006"):
+            if version != "001":
                 cursor.execute("SELECT version FROM migraciones_iot ORDER BY version")
-                expected_versions = ["001_base_administracion"]
-                if version in ("003", "004", "005", "006"):
-                    expected_versions.append("002_sesiones_auditoria")
-                if version in ("004", "005", "006"):
-                    expected_versions.append("003_gestion_comercial")
-                if version in ("005", "006"):
-                    expected_versions.append("004_asignaciones")
-                if version == "006":
-                    expected_versions.append("005_acceso_recursos")
+                expected_versions = [
+                    Path(filename).name.removesuffix(".up.sql")
+                    for filename, (number, _) in sorted(migrations.items())
+                    if number < version
+                ]
                 if [row["version"] for row in cursor.fetchall()] != expected_versions:
                     raise SystemExit("La copia no tiene las migraciones previas esperadas.")
             before = snapshot(cursor, args.copia)

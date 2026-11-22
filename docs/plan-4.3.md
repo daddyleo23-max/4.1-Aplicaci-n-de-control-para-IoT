@@ -237,3 +237,31 @@ editor de pasos compatible con comandos de la unidad y guardado atómico.
 La siguiente migración deberá preservar las dos demos existentes como demos
 de empresa, mantener los nueve pasos actuales y validar que la reasignación
 de un vehículo no exponga demos privadas de su propietario anterior.
+
+## Entrega 007 preparada
+
+007_editor_demos añade tipo EMPRESA/PRIVADA, propietario y revisión.
+Los registros previos reciben tipo EMPRESA y revisión 1. Los tres procedimientos
+sp_editor_* resuelven visibilidad y guardan cabecera y secuencia en la misma
+transacción, con comprobación de usuario y propiedad y bloqueo de la unidad.
+El guardado rechaza revisiones antiguas, comandos inactivos o ajenos y demos
+anidadas. La API protege edición mientras hay una demo ejecutándose en el
+proceso actual.
+
+Límites iniciales elegidos para el editor: 100 pasos, 10000 ms por movimiento,
+5000 ms por pausa y 120000 ms por secuencia. Son límites de software
+conservadores configurados para esta entrega y deben contrastarse con el
+hardware antes de ejecutar físicamente secuencias.
+
+Rutas preparadas: GET/POST /mis-demos, GET /mis-demos/{id_demo} y
+POST /mis-demos/{id_demo}/guardar. La consulta exige id_vehiculo.
+Las rutas previas de edición individual de pasos, en modo sesiones, remiten
+al editor de secuencia completa para mantener revisiones y propiedad.
+La consulta previa de demos y el inicio de ejecución filtran visibilidad.
+
+La suite de 34 pruebas locales pasó. probar_editor_demos.py está preparado
+para crear, leer, editar y desactivar una demo privada de DETENER sin iniciar
+su ejecución; verifica ocultación al segundo comprador, conflicto de revisión
+y rechazo de un comando ajeno conservando la secuencia guardada.
+Migración SQL, pruebas HTTP reales, interfaz visual y regresión de ejecución
+de demos con los nuevos permisos están pendientes de esta entrega.
