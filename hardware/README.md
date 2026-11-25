@@ -23,7 +23,7 @@ Dependencias si faltan: crear un entorno virtual e instalar `hardware/requiremen
 
 ## Preparación física, después de aprobar la simulación
 
-1. Conservar el sketch original. El firmware nuevo está en `Montacargas_USB_43/Montacargas_USB_43.ino`. Mantiene GPIO21 (DS), GPIO18 (SHCP) y GPIO19 (STCP), como el archivo ESP32 existente.
+1. Conservar el sketch original. El firmware nuevo está en `Montacargas_USB_43/Montacargas_USB_43.ino`. Se corrigió el mapa para coincidir con el sketch numérico aportado: GPIO5 (DS), GPIO19 (SHCP/reloj) y GPIO18 (STCP/latch), incluidas las pausas de 20 microsegundos entre bytes y el retorno de latch a LOW. El archivo ESP32 usado inicialmente como referencia tenía otros pines y no correspondía al cableado confirmado. El mapa de funciones por bit queda pendiente: CHANNEL_MAP_VERIFIED=false bloquea órdenes de movimiento hasta verificar los números 1..16. No cargar para una prueba de movimiento hasta completar esa verificación.
 2. Compilar y cargar desde Arduino IDE con la placa y puerto reales. Durante la carga y el primer ensayo, mantener el vehículo sin posibilidad de desplazamiento y con acceso a su interruptor de alimentación.
 3. Comprobar que aparece `READY IOT43/1` al reiniciar. Cerrar el monitor serie antes de usar el puente: sólo un programa debe abrir el puerto.
 4. Para el primer ensayo físico, activar explícitamente:
