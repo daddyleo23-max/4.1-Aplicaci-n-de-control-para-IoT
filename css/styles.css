@@ -579,3 +579,60 @@ body.control-expanded{overflow:hidden}
   letter-spacing:.05em;
   white-space:nowrap;
 }
+
+
+/* Acceso: misma estructura lateral del mando y panel principal con producto. */
+.account-view .account-login{
+  display:grid;grid-template-columns:minmax(0,1.15fr) minmax(280px,1fr);
+  width:100%;max-width:none;padding:0;gap:0;margin:0;overflow:hidden;
+  border:1px solid #3b463d;border-radius:20px;background:#1c2320;
+}
+.login-visual{display:flex;flex-direction:column;justify-content:center;min-width:0;padding:36px;background:radial-gradient(ellipse at 45% 45%,#d7a62912,transparent 65%),#171e1b;border-right:1px solid #354037}
+.account-login .login-kicker{font:11px var(--mono);letter-spacing:.12em;color:#b5a46b;margin:0 0 18px}
+.account-login .login-visual h3{font-size:clamp(24px,2.4vw,38px);line-height:1.2;letter-spacing:-.04em;margin:0;font-weight:700}
+.login-visual h3 span{color:#f6bd35}
+.login-visual img{display:block;width:100%;height:auto;max-width:540px;align-self:center;margin:18px 0;object-fit:contain;mix-blend-mode:lighten}
+.account-login .login-visual-copy{font-size:14px;line-height:1.7;color:#9fafa5;margin:0;max-width:36ch}
+.login-fields{display:flex;flex-direction:column;justify-content:center;gap:20px;padding:clamp(24px,3vw,48px);min-width:0}
+.account-login .login-fields h3{font-size:30px;font-weight:700;letter-spacing:-.035em;margin:0}
+.account-login .login-fields .login-kicker{margin:0;color:#d6b15d;font-size:10px}
+.account-login .login-description{font-size:14px;color:#a7b7ac;line-height:1.65;margin:-8px 0 6px}
+.account-login .login-fields label{font-size:14px;font-weight:600;gap:9px}
+.account-login .login-fields input{background:#151d18;border-color:#49584b;min-height:50px;font-weight:400}
+.account-login input::placeholder{color:#7e9082;opacity:1}
+.account-login .login-fields button{min-height:50px;margin-top:4px;font-size:15px;background:linear-gradient(120deg,#f4c34c,#e9ae2b);color:#1b2119;border-color:#d4a335;box-shadow:0 5px 18px #0002}
+.account-login .login-help{font-size:12px;color:#8f9f94;line-height:1.6;text-align:center;margin:0}
+@media(min-width:1001px){
+  body .app-shell .page-wrap:has(#view-admin:not([hidden]) #account-login:not([hidden])){
+    display:grid;grid-template-columns:minmax(270px,320px) minmax(0,1fr);
+    grid-template-rows:auto auto auto 1fr;gap:18px 26px;max-width:none;align-content:start;
+  }
+  .page-wrap:has(#view-admin:not([hidden]) #account-login:not([hidden]))>.intro-row{grid-column:1;grid-row:1;display:block;margin:0}
+  .page-wrap:has(#view-admin:not([hidden]) #account-login:not([hidden])) h1{font-size:30px}
+  .page-wrap:has(#view-admin:not([hidden]) #account-login:not([hidden])) .connection-summary{margin-top:14px;width:max-content;max-width:100%;white-space:normal}
+  .page-wrap:has(#view-admin:not([hidden]) #account-login:not([hidden]))>.status-grid{grid-column:1;grid-row:2;grid-template-columns:1fr;gap:9px;margin:0}
+  .page-wrap:has(#view-admin:not([hidden]) #account-login:not([hidden]))>.view-nav{grid-column:1;grid-row:3;width:100%;margin:0}
+  .page-wrap:has(#view-admin:not([hidden]) #account-login:not([hidden])) .view-tab{flex:1 1 auto;min-width:0;padding-inline:8px;letter-spacing:.05em;white-space:nowrap}
+  .page-wrap:has(#account-login:not([hidden]))>#view-admin:not([hidden]){grid-column:2;grid-row:1/5;align-self:start;min-width:0}
+}
+.account-view:has(#account-login:not([hidden])){display:flex;flex-direction:column;gap:0}
+.account-view:has(#account-login:not([hidden])) .account-heading{margin:0 0 20px}
+.account-view:has(#account-login:not([hidden])) .account-heading h2{font-size:24px}
+.account-view:has(#account-login:not([hidden])) .account-heading p{font-size:13px}
+.account-view:has(#account-login:not([hidden])) .account-toolbar{order:3;margin:20px 0 0;padding:16px 0 0;border-bottom:0;border-top:1px solid #343d38}
+@media(min-width:1001px) and (max-width:1200px){
+  .login-visual{padding:24px}
+  .account-view .account-login{grid-template-columns:minmax(0,1fr) minmax(260px,1fr)}
+  .login-fields{padding:24px}
+}
+@media(max-width:700px){
+  .account-view:has(#account-login:not([hidden])) .account-heading{margin-top:16px}
+  .account-view .account-login{grid-template-columns:1fr;border-radius:16px}
+  .login-fields{grid-row:1;padding:24px;gap:18px}
+  .account-login .login-fields h3{font-size:26px}
+  .login-visual{grid-row:2;padding:22px 24px;border-right:0;border-top:1px solid #354037;position:relative;min-height:170px;justify-content:center}
+  .account-login .login-visual .login-kicker{margin-bottom:10px;font-size:9px}
+  .account-login .login-visual h3{font-size:20px;max-width:55%;position:relative;z-index:1}
+  .login-visual img{position:absolute;width:48%;right:5px;bottom:8px;margin:0}
+  .account-login .login-visual-copy{display:none}
+}

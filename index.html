@@ -196,10 +196,21 @@
           <section id="guest-trial" class="panel account-panel" hidden aria-label="Prueba temporal de Invitado"></section>
           <section id="public-catalog" class="panel account-panel" hidden aria-label="Catálogo público"></section>
           <form id="account-login" class="panel account-login">
-            <h3>Iniciar sesión</h3>
-            <label>Correo<input name="correo" type="email" required autocomplete="username"></label>
-            <label>Contraseña<input name="password" type="password" required autocomplete="current-password"></label>
-            <button type="submit">Entrar</button>
+            <div class="login-visual">
+              <p class="login-kicker">MODEL · CONTROL IoT</p>
+              <h3>Tu montacargas.<br><span>Todo bajo control.</span></h3>
+              <img src="./assets/montacargas.webp" width="540" height="360" alt="Ilustración de un montacargas amarillo y negro" decoding="async">
+              <p class="login-visual-copy">Control, monitoreo y administración en una sola plataforma.</p>
+            </div>
+            <div class="login-fields">
+              <p class="login-kicker">ACCESO A LA PLATAFORMA</p>
+              <h3>Iniciar sesión</h3>
+              <p class="login-description">Ingresa a tu cuenta para acceder a tus vehículos.</p>
+              <label>Correo<input name="correo" type="email" required autocomplete="username" placeholder="tu@correo.com"></label>
+              <label>Contraseña<input name="password" type="password" required autocomplete="current-password" placeholder="Tu contraseña"></label>
+              <button type="submit">Entrar</button>
+              <p class="login-help">Utiliza la cuenta proporcionada por el administrador.</p>
+            </div>
           </form>
           <div id="account-content" hidden>
             <nav id="account-menu" class="account-menu" aria-label="Gestión de la cuenta"></nav>
