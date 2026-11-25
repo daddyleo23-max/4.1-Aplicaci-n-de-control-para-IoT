@@ -67,4 +67,22 @@ class RelayTests(unittest.IsolatedAsyncioTestCase):
                 await relay(API(),SimpleNamespace(unidad=1,permitir=['ADELANTE']),Out())
         self.assertIn('ARM',writes);self.assertIn('C W',writes);self.assertEqual(writes[-1],'X')
 
+class ApiErrors(unittest.TestCase):
+    def test_login_401_has_specific_diagnostic(self):
+        import urllib.error
+        from unittest.mock import patch
+        from puente_usb import API
+        error=urllib.error.HTTPError('https://example.invalid/auth/login',401,'Unauthorized',{},None)
+        with patch('urllib.request.urlopen',side_effect=error) as call:
+            with self.assertRaisesRegex(RuntimeError,'Login rechazado'):
+                API('https://example.invalid').call('/auth/login',{'correo':'local@example.invalid','password':'test-only'})
+        self.assertEqual(call.call_args.kwargs['timeout'],10)
+    def test_control_timeout_stays_short(self):
+        from unittest.mock import patch
+        from puente_usb import API
+        with patch('urllib.request.urlopen',side_effect=TimeoutError) as call:
+            with self.assertRaisesRegex(RuntimeError,'/vehiculos/1/control'):
+                API('https://example.invalid').call('/vehiculos/1/control')
+        self.assertEqual(call.call_args.kwargs['timeout'],2)
+
 if __name__=='__main__': unittest.main()

@@ -4,6 +4,7 @@ import asyncio
 from datetime import datetime, timezone
 import getpass
 import json
+import ssl
 import time
 import urllib.error
 import urllib.request
@@ -49,12 +50,20 @@ class API:
         request = urllib.request.Request(self.origin+path,
             data=json.dumps(body).encode() if body is not None else None, headers=headers)
         try:
-            with urllib.request.urlopen(request, timeout=2) as response:
+            with urllib.request.urlopen(request, timeout=10 if path in ('/auth/login','/mis-vehiculos') else 2) as response:
                 return json.load(response)
         except urllib.error.HTTPError as error:
-            raise RuntimeError(f'API HTTP {error.code}; revisa la sesión y los permisos.') from None
-        except (urllib.error.URLError, TimeoutError):
-            raise RuntimeError('No se pudo consultar la API con HTTPS válido.') from None
+            if path == '/auth/login' and error.code == 401:
+                raise RuntimeError('Login rechazado (HTTP 401): revisa el correo y la contraseña de APLICACIÓN del comprador; no uses las credenciales de RDS.') from None
+            raise RuntimeError(f'{path}: API HTTP {error.code}; revisa la sesión y los permisos.') from None
+        except TimeoutError:
+            raise RuntimeError(f'{path}: la API agotó el tiempo de espera; comprueba el backend y Caddy.') from None
+        except urllib.error.URLError as error:
+            if isinstance(error.reason,ssl.SSLCertVerificationError):
+                raise RuntimeError(f'{path}: no se pudo validar el certificado HTTPS. No se desactiva TLS.') from None
+            if isinstance(error.reason,TimeoutError):
+                raise RuntimeError(f'{path}: se agotó el tiempo para conectar con la API.') from None
+            raise RuntimeError(f'{path}: no se pudo conectar a la API ({type(error.reason).__name__}). Revisa servidor, red e IP pública.') from None
 
 
 class Output:
