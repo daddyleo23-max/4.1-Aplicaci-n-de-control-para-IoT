@@ -1,6 +1,6 @@
 # Puente USB para el montacargas 4.3
 
-Estado: implementación inicial. Nueve pruebas Python pasan, incluida recepción de una orden nueva y parada al cerrar el canal con conexiones simuladas. El firmware todavía debe compilarse para la placa concreta, cargarse y comprobarse físicamente. No se ha abierto ni escrito el puerto físico durante el desarrollo.
+Estado: implementación inicial. Doce pruebas Python pasan, incluida recepción de una orden nueva y parada al cerrar el canal con conexiones simuladas. El firmware todavía debe compilarse para la placa concreta, cargarse y comprobarse físicamente. No se ha abierto ni escrito el puerto físico durante el desarrollo.
 
 ## Recorrido
 
@@ -41,7 +41,8 @@ Por defecto sólo se reenvían ADELANTE y DETENER. Verificar un pulso corto y un
 - Estado inicial, historial y órdenes de otra unidad no se reproducen. Órdenes atrasadas, duplicadas, sin fecha con zona horaria o no permitidas producen STOP.
 - El puente comprueba la reserva activa por REST y la conexión por ping/pong. Si pierde vigencia, conectividad, autorización o ocurre un error, deja de mantener el movimiento y solicita STOP por USB. La sesión del puente se cierra al salir.
 - El firmware arranca con todas las salidas a cero. Necesita ARM y heartbeat. Si pasan 800 ms sin heartbeat, detiene y desarma las salidas. No usa `delay()` para los pulsos, de modo que STOP puede interrumpirlos.
-- Hay un límite adicional de cinco segundos por orden continua de movimiento. No se reproduce automáticamente una orden después de una parada. Las demos con pasos mayores pueden detenerse antes de su duración configurada: verificar secuencias breves en esta primera fase.
+- Hay un límite adicional de un segundo por orden continua de movimiento. No se reproduce automáticamente una orden después de una parada. Las demos con pasos mayores pueden detenerse antes de su duración configurada: verificar secuencias breves en esta primera fase.
+- Se esperan hasta 3 s para el ping WSS y las consultas de control, con una vigencia máxima de 3.5 s para las comprobaciones. El watchdog USB de 800 ms y el límite de un segundo por movimiento son independientes de ese presupuesto de red.
 - Una pérdida de red tarda en detectarse; el watchdog no equivale a una parada instantánea desde que se corta Internet. La distancia de frenado y la respuesta real requieren medición.
 - `APPLIED` sólo indica aplicación de las salidas GPIO. No demuestra desplazamiento, frenado físico, posición ni recepción por radio. El indicador WSS de la web sigue representando la conexión del navegador.
 - Antes de desconectar, usar DETENER y cerrar el puente. Desconectar USB no sustituye el interruptor del vehículo. No se ha verificado aquí una entrada hardware de deshabilitación de los 74HC595 durante reinicios o fallos eléctricos.

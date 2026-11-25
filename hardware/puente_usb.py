@@ -13,6 +13,9 @@ from urllib.parse import urlsplit
 COMMANDS = {'ADELANTE':'W','ATRAS':'S','GIRAR_IZQUIERDA':'A','GIRAR_DERECHA':'D',
             'SUBIR_HORQUILLA':'E','BAJAR_HORQUILLA':'Q','LUCES':'L','SONIDO':'N','VELOCIDAD':'V','DETENER':'X'}
 STOP_EVENTS = {'demo_fin','demo_cancelada','demo_error'}
+PING_TIMEOUT_S = 3.0
+LEASE_TIMEOUT_S = 3.0
+FRESH_LINK_S = 3.5
 
 
 def translate(event, unit, allowed, *, now=None, last=0):
@@ -50,7 +53,7 @@ class API:
         request = urllib.request.Request(self.origin+path,
             data=json.dumps(body).encode() if body is not None else None, headers=headers)
         try:
-            with urllib.request.urlopen(request, timeout=10 if path in ('/auth/login','/mis-vehiculos') else 2) as response:
+            with urllib.request.urlopen(request, timeout=10 if path in ('/auth/login','/mis-vehiculos') else LEASE_TIMEOUT_S) as response:
                 return json.load(response)
         except urllib.error.HTTPError as error:
             if path == '/auth/login' and error.code == 401:
@@ -123,16 +126,20 @@ async def relay(api, args, output):
                 await asyncio.sleep(.3)
         async def ping():
             while True:
+                started = time.monotonic()
                 pong = await ws.ping()
                 try:
-                    await asyncio.wait_for(pong,.75)
+                    await asyncio.wait_for(pong,PING_TIMEOUT_S)
                 except asyncio.TimeoutError:
-                    raise RuntimeError('No llegó la respuesta al ping WSS en 0.75 s. Se solicita STOP y se cierra el puente; revisar latencia/servidor.') from None
+                    raise RuntimeError('No llegó la respuesta al ping WSS en 3 s. Se solicita STOP y se cierra el puente; revisar latencia/servidor.') from None
                 state['pong'] = time.monotonic()
-                await asyncio.sleep(.2)
+                latency = state['pong']-started
+                if getattr(args,'diagnostico',False) and latency>=.5:
+                    print('Latencia WSS:',round(latency,2),'s')
+                await asyncio.sleep(.5)
         def live():
             now = time.monotonic()
-            return state['lease'] and now-state['checked']<1.2 and now-state['pong']<1
+            return state['lease'] and now-state['checked']<FRESH_LINK_S and now-state['pong']<FRESH_LINK_S
         async def heartbeat():
             was_live = False
             while True:

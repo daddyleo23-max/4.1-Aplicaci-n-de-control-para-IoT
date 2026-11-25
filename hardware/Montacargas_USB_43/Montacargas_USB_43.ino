@@ -3,7 +3,7 @@
 // Sólo sustituye el firmware cuando el cableado y las salidas se hayan comprobado.
 #include <Arduino.h>
 const uint8_t DS_PIN=21, SHCP_PIN=18, STCP_PIN=19;
-const uint32_t WATCHDOG_MS=800, MAX_MOVIMIENTO_MS=5000;
+const uint32_t WATCHDOG_MS=800, MAX_MOVIMIENTO_MS=1000;
 uint16_t movimiento=0, toque=0;
 uint32_t ultimoHeartbeat=0, inicioMovimiento=0, finToque=0;
 bool armado=false, pulsoActivo=false;

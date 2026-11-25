@@ -39,6 +39,12 @@ class ProtocolTests(unittest.TestCase):
 
 class RelayTests(unittest.IsolatedAsyncioTestCase):
     async def test_live_event_is_forwarded_then_stop_on_disconnect(self):
+        await self.exercise(0)
+
+    async def test_slow_pong_does_not_end_valid_channel(self):
+        await self.exercise(.85)
+
+    async def exercise(self, latency):
         import asyncio, json, time
         from types import SimpleNamespace
         from unittest.mock import patch
@@ -54,10 +60,12 @@ class RelayTests(unittest.IsolatedAsyncioTestCase):
             async def send(self,data):pass
             async def recv(self):return json.dumps({'tipo':'estado_inicial','id_vehiculo':1})
             async def ping(self):
-                future=asyncio.get_running_loop().create_future();future.set_result(None);return future
+                future=asyncio.get_running_loop().create_future()
+                asyncio.get_running_loop().call_later(latency,future.set_result,None)
+                return future
             def __aiter__(self):return self.events()
             async def events(self):
-                await asyncio.sleep(.2)
+                await asyncio.sleep(latency+.25)
                 yield json.dumps({'tipo':'movimiento','id_vehiculo':1,'comando':'ADELANTE','timestamp':datetime.now(timezone.utc).isoformat()})
         class Connection:
             async def __aenter__(self):return WS()
@@ -76,6 +84,7 @@ class ApiErrors(unittest.TestCase):
         with patch('urllib.request.urlopen',side_effect=error) as call:
             with self.assertRaisesRegex(RuntimeError,'Login rechazado'):
                 API('https://example.invalid').call('/auth/login',{'correo':'local@example.invalid','password':'test-only'})
+        error.close()
         self.assertEqual(call.call_args.kwargs['timeout'],10)
     def test_control_timeout_stays_short(self):
         from unittest.mock import patch
@@ -83,6 +92,6 @@ class ApiErrors(unittest.TestCase):
         with patch('urllib.request.urlopen',side_effect=TimeoutError) as call:
             with self.assertRaisesRegex(RuntimeError,'/vehiculos/1/control'):
                 API('https://example.invalid').call('/vehiculos/1/control')
-        self.assertEqual(call.call_args.kwargs['timeout'],2)
+        self.assertEqual(call.call_args.kwargs['timeout'],3.0)
 
 if __name__=='__main__': unittest.main()
