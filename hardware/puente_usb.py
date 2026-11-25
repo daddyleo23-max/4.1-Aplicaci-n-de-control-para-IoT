@@ -80,14 +80,16 @@ class Output:
         import serial
         self.serial = serial.Serial(self.port,115200,timeout=.2,write_timeout=.3,exclusive=True)
         # Muchas placas reinician al abrir USB. Esperar sólo al protocolo nuevo.
-        end = time.monotonic()+5
+        print(f'Puerto {self.port} abierto a 115200. Pulsa EN/RESET ahora (no BOOT); espero READY IOT43/1 durante 20 s.',flush=True)
+        end = time.monotonic()+20
         while time.monotonic()<end:
             line = await asyncio.to_thread(self.serial.readline)
             if line.strip() == b'READY IOT43/1':
                 self.verified = True
+                print('Firmware IOT43/1 identificado; salidas todavía detenidas.',flush=True)
                 return
         self.close()
-        raise RuntimeError('El ESP32 no tiene el firmware USB IOT43/1. No se habilita movimiento.')
+        raise RuntimeError('No se recibió READY IOT43/1 durante la espera. Esto no demuestra que falte el firmware. Cierra el monitor serie y pulsa EN/RESET cuando el puente indique que abrió el puerto.')
     def send(self, command):
         if self.serial and self.verified: self.serial.write((command+'\n').encode())
         elif self.serial: raise RuntimeError('Firmware sin identificar; no se envían órdenes.')

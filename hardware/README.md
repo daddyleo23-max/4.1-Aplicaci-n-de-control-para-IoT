@@ -32,7 +32,7 @@ Dependencias si faltan: crear un entorno virtual e instalar `hardware/requiremen
 python3 hardware/puente_usb.py --unidad 1 --puerto /dev/ttyUSB0 --activar
 ```
 
-El puente espera pasivamente el saludo del firmware nuevo. Si no lo recibe en cinco segundos, cerrar y volver a abrir o reiniciar la placa durante esa espera. No escribe mensajes de comprobación al firmware antiguo: podría interpretar letras como órdenes. La apertura del puerto puede reiniciar el ESP32.
+El puente espera pasivamente el saludo del firmware nuevo. Muestra un aviso al abrir el puerto y espera 20 segundos: pulsar EN/RESET en ese momento (no BOOT). Si no recibe el saludo, cierra sin escribir órdenes. No escribe mensajes de comprobación al firmware antiguo: podría interpretar letras como órdenes. La apertura del puerto puede reiniciar el ESP32.
 
 Por defecto sólo se reenvían ADELANTE y DETENER. Verificar un pulso corto y una parada antes de habilitar otras funciones. Los demás comandos se habilitan expresamente con `--permitir` después de verificar su cableado y respuesta. POWER y la demo autónoma del mando no se reenvían en esta primera versión.
 
