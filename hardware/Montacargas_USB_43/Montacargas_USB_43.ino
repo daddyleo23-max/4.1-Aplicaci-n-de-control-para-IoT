@@ -3,9 +3,9 @@
 // Sólo sustituye el firmware cuando el cableado y las salidas se hayan comprobado.
 #include <Arduino.h>
 const uint8_t DS_PIN=5, SHCP_PIN=19, STCP_PIN=18;
-// El sketch numérico confirma los pines, pero no identifica qué botón es cada bit.
-// No habilitar hasta contrastar los números 1..16 con las funciones físicas.
-const bool CHANNEL_MAP_VERIFIED=false;
+// Canales confirmados por el usuario: número 2=avance, número 3=retroceso.
+// El número del programa de prueba es bit+1. El resto NO está verificado.
+const uint8_t BIT_ADELANTE=1, BIT_ATRAS=2;
 const uint32_t WATCHDOG_MS=800, MAX_MOVIMIENTO_MS=1000;
 uint16_t movimiento=0, toque=0;
 uint32_t ultimoHeartbeat=0, inicioMovimiento=0, finToque=0;
@@ -32,19 +32,13 @@ void procesar(const char* orden){
   if(!armado)return;
   if(!strcmp(orden,"H")){ultimoHeartbeat=ahora;return;}
   if(strncmp(orden,"C ",2)||strlen(orden)!=3)return;
-  if(!CHANNEL_MAP_VERIFIED){parar();Serial.println("MAP PENDING: no movement enabled");return;}
-  uint16_t mascara=0;bool pulso=false;
+  uint16_t mascara=0;
   switch(orden[2]){
-    case 'W':mascara=1<<0;break;case 'S':mascara=1<<1;break;
-    case 'Q':mascara=1<<2;break;case 'E':mascara=1<<3;break;
-    case 'A':mascara=1<<9;break;case 'D':mascara=1<<11;break;
-    case 'L':mascara=1<<6;pulso=true;break;
-    case 'N':mascara=1<<8;pulso=true;break;
-    case 'V':mascara=1<<5;pulso=true;break;
-    default:parar();return;
+    case 'W':mascara=(uint16_t)(1U<<BIT_ADELANTE);break;
+    case 'S':mascara=(uint16_t)(1U<<BIT_ATRAS);break;
+    default:parar();Serial.println("UNVERIFIED CHANNEL: STOP");return;
   }
-  if(pulso){toque=mascara;pulsoActivo=true;finToque=ahora+150;}
-  else{movimiento=mascara;inicioMovimiento=ahora;}
+  movimiento=mascara;inicioMovimiento=ahora;
   salida();Serial.println("APPLIED"); // Confirma salida GPIO, no desplazamiento físico.
 }
 void setup(){

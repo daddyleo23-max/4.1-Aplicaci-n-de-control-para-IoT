@@ -23,7 +23,7 @@ Dependencias si faltan: crear un entorno virtual e instalar `hardware/requiremen
 
 ## Preparación física, después de aprobar la simulación
 
-1. Conservar el sketch original. El firmware nuevo está en `Montacargas_USB_43/Montacargas_USB_43.ino`. Se corrigió el mapa para coincidir con el sketch numérico aportado: GPIO5 (DS), GPIO19 (SHCP/reloj) y GPIO18 (STCP/latch), incluidas las pausas de 20 microsegundos entre bytes y el retorno de latch a LOW. El archivo ESP32 usado inicialmente como referencia tenía otros pines y no correspondía al cableado confirmado. El mapa de funciones por bit queda pendiente: CHANNEL_MAP_VERIFIED=false bloquea órdenes de movimiento hasta verificar los números 1..16. No cargar para una prueba de movimiento hasta completar esa verificación.
+1. Conservar el sketch original. El firmware nuevo está en `Montacargas_USB_43/Montacargas_USB_43.ino`. Se corrigió el mapa para coincidir con el sketch numérico aportado: GPIO5 (DS), GPIO19 (SHCP/reloj) y GPIO18 (STCP/latch), incluidas las pausas de 20 microsegundos entre bytes y el retorno de latch a LOW. El archivo ESP32 usado inicialmente como referencia tenía otros pines y no correspondía al cableado confirmado. Se confirmaron únicamente número 2=avance (bit 1) y número 3=retroceso (bit 2). El firmware habilita C W y C S con esas salidas; cualquier otro canal solicita STOP. DETENER pone todas las salidas en LOW. No se conservaron las asignaciones de giro/horquilla del archivo de referencia equivocado. La alimentación debe estar estable antes de una nueva prueba física.
 2. Compilar y cargar desde Arduino IDE con la placa y puerto reales. Durante la carga y el primer ensayo, mantener el vehículo sin posibilidad de desplazamiento y con acceso a su interruptor de alimentación.
 3. Comprobar que aparece `READY IOT43/1` al reiniciar. Cerrar el monitor serie antes de usar el puente: sólo un programa debe abrir el puerto.
 4. Para el primer ensayo físico, activar explícitamente:
@@ -34,7 +34,7 @@ python3 hardware/puente_usb.py --unidad 1 --puerto /dev/ttyUSB0 --activar
 
 El puente espera pasivamente el saludo del firmware nuevo. Muestra un aviso al abrir el puerto y espera 20 segundos: pulsar EN/RESET en ese momento (no BOOT). Si no recibe el saludo, cierra sin escribir órdenes. No escribe mensajes de comprobación al firmware antiguo: podría interpretar letras como órdenes. La apertura del puerto puede reiniciar el ESP32.
 
-Por defecto sólo se reenvían ADELANTE y DETENER. Verificar un pulso corto y una parada antes de habilitar otras funciones. Los demás comandos se habilitan expresamente con `--permitir` después de verificar su cableado y respuesta. POWER y la demo autónoma del mando no se reenvían en esta primera versión.
+Por defecto sólo se reenvían ADELANTE y DETENER. Verificar un pulso corto y una parada antes de habilitar otras funciones. Para incluir retroceso, ya confirmado en el programa numérico, usar `--permitir ADELANTE ATRAS`. Los otros comandos requieren primero identificar y configurar su salida física en el firmware; `--permitir` por sí solo no los habilita en la placa. POWER y la demo autónoma del mando no se reenvían en esta primera versión.
 
 ## Límites y recuperación
 
