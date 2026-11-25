@@ -63,7 +63,8 @@ class RelayTests(unittest.IsolatedAsyncioTestCase):
             async def __aenter__(self):return WS()
             async def __aexit__(self,*args):pass
         with patch('websockets.asyncio.client.connect',return_value=Connection()):
-            await relay(API(),SimpleNamespace(unidad=1,permitir=['ADELANTE']),Out())
+            with self.assertRaisesRegex(RuntimeError,'cerró el canal'):
+                await relay(API(),SimpleNamespace(unidad=1,permitir=['ADELANTE']),Out())
         self.assertIn('ARM',writes);self.assertIn('C W',writes);self.assertEqual(writes[-1],'X')
 
 if __name__=='__main__': unittest.main()

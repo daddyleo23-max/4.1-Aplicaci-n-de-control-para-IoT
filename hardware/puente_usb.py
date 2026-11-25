@@ -58,7 +58,9 @@ class API:
 
 
 class Output:
-    def __init__(self, port=None): self.serial, self.port, self.verified = None, port, False
+    def __init__(self, port=None):
+        self.serial, self.port, self.verified = None, port, False
+        self.last = None
     async def open(self):
         if not self.port:
             print('SIMULACIÓN: no se abre ni se escribe en el puerto USB.')
@@ -77,7 +79,8 @@ class Output:
     def send(self, command):
         if self.serial and self.verified: self.serial.write((command+'\n').encode())
         elif self.serial: raise RuntimeError('Firmware sin identificar; no se envían órdenes.')
-        elif command not in ('H','X'): print('SIMULACIÓN USB:',command)
+        elif command != 'H' and command != self.last: print('SIMULACIÓN USB:',command)
+        if command != 'H': self.last = command
     def close(self):
         if self.serial:
             try:
@@ -102,14 +105,20 @@ async def relay(api, args, output):
         async def watch_lease():
             while True:
                 data = await asyncio.to_thread(api.call,f'/vehiculos/{args.unidad}/control')
-                state['lease'] = data.get('reservada') is True and data.get('estado')=='ACTIVA'
+                reserved = data.get('reservada') is True and data.get('estado')=='ACTIVA'
+                if reserved != state['lease'] or not state['checked']:
+                    print('Reserva:', 'ACTIVA' if reserved else 'sin control activo; adquiere control desde la web.')
+                state['lease'] = reserved
                 state['checked'] = time.monotonic()
                 if not state['lease']: stop()
                 await asyncio.sleep(.3)
         async def ping():
             while True:
                 pong = await ws.ping()
-                await asyncio.wait_for(pong,.75)
+                try:
+                    await asyncio.wait_for(pong,.75)
+                except asyncio.TimeoutError:
+                    raise RuntimeError('No llegó la respuesta al ping WSS en 0.75 s. Se solicita STOP y se cierra el puente; revisar latencia/servidor.') from None
                 state['pong'] = time.monotonic()
                 await asyncio.sleep(.2)
         def live():
@@ -135,11 +144,25 @@ async def relay(api, args, output):
         async def receive():
             last = 0
             async for raw in ws:
-                command, last = translate(json.loads(raw),args.unidad,set(args.permitir)|{'DETENER'},last=last)
+                event = json.loads(raw)
+                if getattr(args,'diagnostico',False) and isinstance(event,dict):
+                    # No imprimir la trama completa: puede contener datos innecesarios.
+                    print('Evento recibido:',event.get('tipo'),'unidad:',event.get('id_vehiculo'),'comando:',event.get('comando'))
+                    if event.get('timestamp'):
+                        try:
+                            date=datetime.fromisoformat(event['timestamp'].replace('Z','+00:00'))
+                            if date.tzinfo: print('Antigüedad del evento (s):',round(time.time()-date.timestamp(),3))
+                        except (ValueError,TypeError,AttributeError): pass
+                command, last = translate(event,args.unidad,set(args.permitir)|{'DETENER'},last=last)
                 if command is None: continue
-                if command=='X' or not live(): stop(); continue
+                if command=='X' or not live():
+                    if getattr(args,'diagnostico',False):
+                        print('STOP:', 'DETENER, límite o evento rechazado.' if command=='X' else 'reserva o verificación de enlace sin vigencia.')
+                    stop(); continue
                 output.send('C '+command)
                 print('Orden nueva:',command)
+            closed = getattr(ws,'close_code',None)
+            raise RuntimeError(f'El servidor cerró el canal WSS (código {closed}). STOP solicitado; no se reconecta ni reproduce órdenes.')
         tasks = [asyncio.create_task(f()) for f in (watch_lease,ping,heartbeat,receive,serial_feedback)]
         try:
             done, _ = await asyncio.wait(tasks,return_when=asyncio.FIRST_COMPLETED)
@@ -177,6 +200,7 @@ def arguments():
     parser.add_argument('--api',default='https://34.194.45.28')
     parser.add_argument('--unidad',type=int,default=1)
     parser.add_argument('--puerto',default='/dev/ttyUSB0')
+    parser.add_argument('--diagnostico',action='store_true',help='Muestra reserva y tipo de eventos, sin tokens ni contraseñas.')
     parser.add_argument('--activar',action='store_true',help='Activa USB; exige el firmware nuevo y área de prueba preparada.')
     parser.add_argument('--permitir',nargs='+',choices=sorted(set(COMMANDS)-{'DETENER'}),default=['ADELANTE'])
     args = parser.parse_args()
@@ -189,4 +213,4 @@ def arguments():
 if __name__=='__main__':
     try: asyncio.run(main(arguments()))
     except KeyboardInterrupt: print('\nPuente detenido; salidas desactivadas.')
-    except Exception as error: raise SystemExit(str(error))
+    except Exception as error: raise SystemExit('Puente detenido: '+(str(error) or type(error).__name__))
