@@ -23,9 +23,9 @@ Dependencias si faltan: crear un entorno virtual e instalar `hardware/requiremen
 
 ## Preparación física, después de aprobar la simulación
 
-1. Conservar el sketch original. El firmware nuevo está en `Montacargas_USB_43/Montacargas_USB_43.ino`. Se corrigió el mapa para coincidir con el sketch numérico aportado: GPIO5 (DS), GPIO19 (SHCP/reloj) y GPIO18 (STCP/latch), incluidas las pausas de 20 microsegundos entre bytes y el retorno de latch a LOW. El archivo ESP32 usado inicialmente como referencia tenía otros pines y no correspondía al cableado confirmado. Se confirmaron únicamente número 2=avance (bit 1) y número 3=retroceso (bit 2). El firmware IOT43/2 incluye el mapa ampliado de canales confirmados que se detalla al final; cualquier función no identificada solicita STOP. DETENER pone todas las salidas en LOW. No se conservaron las asignaciones de giro/horquilla del archivo de referencia equivocado. La alimentación debe estar estable antes de una nueva prueba física.
+1. Conservar el sketch original. El firmware nuevo está en `Montacargas_USB_43/Montacargas_USB_43.ino`. Se corrigió el mapa para coincidir con el sketch numérico aportado: GPIO5 (DS), GPIO19 (SHCP/reloj) y GPIO18 (STCP/latch), incluidas las pausas de 20 microsegundos entre bytes y el retorno de latch a LOW. El archivo ESP32 usado inicialmente como referencia tenía otros pines y no correspondía al cableado confirmado. Se confirmaron únicamente número 2=avance (bit 1) y número 3=retroceso (bit 2). El firmware IOT43/3 incluye el mapa ampliado de canales confirmados que se detalla al final; cualquier función no identificada solicita STOP. DETENER pone todas las salidas en LOW. No se conservaron las asignaciones de giro/horquilla del archivo de referencia equivocado. La alimentación debe estar estable antes de una nueva prueba física.
 2. Compilar y cargar desde Arduino IDE con la placa y puerto reales. Durante la carga y el primer ensayo, mantener el vehículo sin posibilidad de desplazamiento y con acceso a su interruptor de alimentación.
-3. Comprobar que aparece `READY IOT43/2` al reiniciar. Cerrar el monitor serie antes de usar el puente: sólo un programa debe abrir el puerto.
+3. Comprobar que aparece `READY IOT43/3` al reiniciar. Cerrar el monitor serie antes de usar el puente: sólo un programa debe abrir el puerto.
 4. Para el primer ensayo físico, activar explícitamente:
 
 ```bash
@@ -62,15 +62,16 @@ python3 -m unittest discover -s hardware -p 'test_*.py' -v
 | 3 | 2 | Atrás | C S |
 | 4 | 3 | Claxon, pulso de 250 ms | C N |
 | 7 | 6 | Subir pala | C E |
-| 12 | 11 | Giro derecho | C D |
+| 12 | 11 | Giro izquierdo | C A |
+| 13 | 12 | Giro derecho | C D |
 | 15 | 14 | Bajar pala | C Q |
 
-Canal 13 podría ser giro izquierdo, pero el alumno lo indicó con duda; pendiente de confirmar. Luces, velocidad, encendido/apagado y demo autónoma no se habilitan. El claxon ignora repeticiones mientras su pulso esté activo y exige un segundo antes de otro toque; no tiene pulsación larga.
+Corrección posterior del alumno: canal 12=izquierda y canal 13=derecha. Canal 6=posible velocidad (bit 5, pendiente de confirmar); canal 10=demo autónoma (bit 9), identificada pero no habilitada porque soltar el botón no garantiza cancelarla. Luces, velocidad, encendido/apagado y demo autónoma no se habilitan. El claxon ignora repeticiones mientras su pulso esté activo y exige un segundo antes de otro toque; no tiene pulsación larga.
 
-El firmware actualizado se identifica como READY IOT43/2. El puente exige esa versión para no confundirlo con el firmware anterior de pines o canales distintos. Primero cargar y comprobar con vehículo apagado. Después de una prueba de avance/STOP satisfactoria, se pueden incluir las funciones confirmadas mediante:
+El firmware actualizado se identifica como READY IOT43/3. El puente exige esa versión para no confundirlo con el firmware anterior de pines o canales distintos. Primero cargar y comprobar con vehículo apagado. Después de una prueba de avance/STOP satisfactoria, se pueden incluir las funciones confirmadas mediante:
 
 ```bash
-python3 hardware/puente_usb.py --unidad 1 --puerto /dev/ttyUSB0 --activar --diagnostico --permitir ADELANTE ATRAS GIRAR_DERECHA SUBIR_HORQUILLA BAJAR_HORQUILLA SONIDO
+python3 hardware/puente_usb.py --unidad 1 --puerto /dev/ttyUSB0 --activar --diagnostico --permitir ADELANTE ATRAS GIRAR_IZQUIERDA GIRAR_DERECHA SUBIR_HORQUILLA BAJAR_HORQUILLA SONIDO
 ```
 
 El puente sigue permitiendo por defecto únicamente ADELANTE y DETENER. Comprobar cada función física por separado, no una demo completa. La versión de integración conserva el límite de un segundo por orden de movimiento y el watchdog de 800 ms. La corrección de mapa no equivale a una prueba física ya aprobada.
