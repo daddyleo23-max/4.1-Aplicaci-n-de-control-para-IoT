@@ -1,4 +1,4 @@
-import { config, clearVehicleSelection, selectedSupportScope } from './config.js';
+import { supportsCompositeControl, config, clearVehicleSelection, selectedSupportScope } from './config.js';
 import { clearSessionApiKey, initializeLocalAuth, isLocalHost, setSessionApiKey } from './auth-session.js';
 import { api, ApiError } from './api-client.js';
 import { elements, feedback, renderCommands, renderDemos, setDemoStatus, setEvent, setStatus } from './ui.js';
@@ -67,7 +67,7 @@ function configureAuthPanel() {
 
 configureAuthPanel();
 
-function sendCommand(command, { priority = false } = {}) {
+function sendCommand(command, { priority = false, secondary = null } = {}) {
   if (!command || command.activo === false || command.activo === 0) return;
   if (stopInFlight && !priority) { feedback('Espera a que termine DETENER antes de iniciar otro movimiento.'); return; }
   if (demoRunning && command.nombre?.toUpperCase() !== 'DETENER') { feedback('Cancela la DEMO antes de enviar otro comando.', 'DEMO ACTIVA'); return; }
@@ -80,7 +80,7 @@ function sendCommand(command, { priority = false } = {}) {
     if (config.sessionAuth && (!accountToken || accountToken !== currentToken() || vehicleId !== config.vehicleId)) return;
     if (epoch === requestEpoch || priority) feedback(`Enviando ${command.nombre}…`, command.nombre);
     try {
-      const response = await api.move(command.id_comando);
+      const response = await api.move(command.id_comando, secondary?.id_comando || null);
       if (epoch === requestEpoch || priority) feedback(`Aceptado por API · HTTP ${response.status}`, command.nombre);
     } catch (error) {
       if (epoch === requestEpoch || priority) feedback(error instanceof ApiError ? error.message : 'No se pudo enviar el comando.', command.nombre);
@@ -153,7 +153,13 @@ async function loadInitialData() {
       },
       onUnavailable: (message) => feedback(message, 'FUNCIÓN PENDIENTE'),
     });
-    bindJoystick(commands, sendCommand, stopVehicle);
+    bindJoystick(commands, sendCommand, stopVehicle, (drive, turn) => {
+      if (!supportsCompositeControl()) {
+        feedback('El backend requiere la actualización de control combinado; se enviará sólo el giro.');
+        return sendCommand(turn);
+      }
+      return sendCommand(drive, { secondary: turn });
+    });
     elements.stop.disabled = !stopCommand;
     if (!stopCommand) { elements.stop.disabled = true; elements.stop.title = 'DETENER no está disponible en el catálogo'; }
   } else {

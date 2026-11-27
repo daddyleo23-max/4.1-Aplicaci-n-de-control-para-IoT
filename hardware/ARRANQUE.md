@@ -4,7 +4,7 @@ Son dos computadoras: el servidor EC2 Windows ejecuta FastAPI/Caddy; la computad
 
 ## 1. Firmware Arduino
 
-Abrir de nuevo el archivo `Montacargas_USB_43/Montacargas_USB_43.ino` para evitar compilar una pestaña con una versión anterior. Seleccionar la placa real y el puerto, compilar y cargar con el vehículo apagado y el puente detenido. El monitor serie a 115200 debe mostrar `READY IOT43/5`; luego cerrarlo antes de usar el puente.
+Abrir de nuevo el archivo `Montacargas_USB_43/Montacargas_USB_43.ino` para evitar compilar una pestaña con una versión anterior. Seleccionar la placa real y el puerto, compilar y cargar con el vehículo apagado y el puente detenido. El monitor serie a 115200 debe mostrar `READY IOT43/6`; luego cerrarlo antes de usar el puente.
 
 Mapa: 2 avance, 3 retroceso, 4 claxon corto, 7 subir pala, 12 izquierda, 13 derecha, 15 bajar pala. Pines: DS=5, STCP=18, SHCP=19. Sólo un movimiento a la vez; claxon 250 ms con separación mínima de un segundo; movimiento manual renovable mientras haya reserva y conexión vigentes; watchdog USB de 800 ms y renovación de movimiento de 900 ms. No se habilitan luces, sonido largo ni demo autónoma. Velocidad usa el canal 6 con un pulso de 250 ms y separación mínima de un segundo. Las demos de la web son secuencias del servidor y cada paso usa su duración recibida, con máximo de 10 segundos. Las pausas liberan las salidas.
 
@@ -48,11 +48,11 @@ Conservar ruedas motrices libres y sin carga en la primera prueba. En la página
 Pulsar DETENER, liberar control y cerrar el puente con Ctrl+C. Después apagar el vehículo. Si se termina la sesión, parar backend y Caddy con Ctrl+C en sus respectivas ventanas y finalizar el laboratorio según sus reglas. No repetir migraciones al volver a arrancar.
 
 
-## Mantener pulsado y red intermitente (IOT43/5)
+## Mantener pulsado y red intermitente (IOT43/6)
 
 Los botones Subir y Bajar de la página envían movimiento al presionar y DETENER al soltar, cancelar, perder el foco o cambiar de pestaña. Recargar la página para obtener esta actualización. El control espera a que termine un STOP pendiente antes de aceptar otro movimiento y descarta movimientos encolados que fueron reemplazados.
 
-El firmware debe actualizarse a IOT43/5 para que funcione con el puente actual. El canal USB exige una renovación de movimiento manual cada 900 ms y heartbeat cada 800 ms; el puente envía esas señales sólo con verificaciones recientes. No se reenvían repetidamente peticiones de movimiento al servidor para mantener la pala.
+El firmware debe actualizarse a IOT43/6 para que funcione con el puente actual. El canal USB exige una renovación de movimiento manual cada 900 ms y heartbeat cada 800 ms; el puente envía esas señales sólo con verificaciones recientes. No se reenvían repetidamente peticiones de movimiento al servidor para mantener la pala.
 
 Si una consulta de reserva falla temporalmente, el puente solicita STOP y vuelve a comprobar la reserva; no reanuda la orden anterior. Los errores de permisos y los cierres WSS siguen cerrando el puente. Si la red se pierde antes de poder verificarse el fallo, existe el plazo de detección de hasta 3.5 s más el tiempo del watchdog; no equivale a una parada física instantánea. Soltar en la web depende también de la latencia REST/WSS.
 

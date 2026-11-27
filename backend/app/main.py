@@ -76,6 +76,7 @@ def inicio():
     return {
         "mensaje": "API para Vehículo IoT",
         "estado": "funcionando",
+        "control_compuesto": sessions_enabled(),
     }
 
 

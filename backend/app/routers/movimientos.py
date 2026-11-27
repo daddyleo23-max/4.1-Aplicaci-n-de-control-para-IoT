@@ -23,8 +23,12 @@ async def registrar_movimiento(
     from app.resource_security import sessions_enabled
     if sessions_enabled():
         from app.services.control_service import control_service
-        return await control_service.move(request.state.session,id_vehiculo,movimiento.id_comando)
+        if movimiento.id_comando_giro is None:
+            return await control_service.move(request.state.session,id_vehiculo,movimiento.id_comando)
+        return await control_service.move(request.state.session,id_vehiculo,movimiento.id_comando,secondary_id=movimiento.id_comando_giro)
 
+    if movimiento.id_comando_giro is not None:
+        raise HTTPException(409,'El movimiento combinado requiere modo de sesiones y control exclusivo.')
     return await _registrar_movimiento(id_vehiculo, movimiento)
 
 

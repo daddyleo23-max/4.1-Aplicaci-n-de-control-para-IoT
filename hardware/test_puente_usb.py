@@ -35,6 +35,14 @@ class ProtocolTests(unittest.TestCase):
             self.assertEqual(translate(self.event(comando=name),1,{name},now=101)[0],letter)
         for name in ('LUCES','POWER','DEMO'):
             self.assertEqual(translate(self.event(comando=name),1,{name},now=101)[0],'X')
+    def test_combined_axes_require_both_allowed_components(self):
+        event=self.event(comandos=[{'comando':'ADELANTE'},{'comando':'GIRAR_IZQUIERDA'}])
+        self.assertEqual(translate(event,1,{'ADELANTE','GIRAR_IZQUIERDA'},now=101)[0],'WA')
+        self.assertEqual(translate(event,1,{'ADELANTE'},now=101)[0],'X')
+    def test_combination_rejects_opposed_or_extra_buttons(self):
+        for names in [['ADELANTE','ATRAS'],['GIRAR_IZQUIERDA','GIRAR_DERECHA'],['ADELANTE','SONIDO'],['ADELANTE','GIRAR_IZQUIERDA','ATRAS']]:
+            event=self.event(comandos=[{'comando':name} for name in names])
+            self.assertEqual(translate(event,1,set(names),now=101)[0],'X')
     def test_unknown_firmware_is_never_written_even_on_exit(self):
         class Port:
             def write(self, data): raise AssertionError('No debe escribir al firmware anterior')
@@ -55,7 +63,7 @@ class HandshakeTests(unittest.IsolatedAsyncioTestCase):
         def write(self,data): self.writes.append(data)
         def close(self): self.closed=True
     async def test_fragmented_greeting_is_identified_without_writes(self):
-        output=Output();port=self.Port([b'READY IOT',b'43/5\r\n']);output.serial=port
+        output=Output();port=self.Port([b'READY IOT',b'43/6\r\n']);output.serial=port
         await output.identify(timeout=1)
         self.assertTrue(output.verified);self.assertEqual(port.writes,[])
     async def test_wrong_version_is_reported_without_writing(self):

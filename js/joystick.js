@@ -10,7 +10,7 @@ const normalize = (text = '') => text.normalize('NFD').replace(/[\u0300-\u036f]/
 const enabled = (command) => command && command.activo !== false && command.activo !== 0;
 let joystickBindings = new AbortController();
 
-export function bindJoystick(commands, sendCommand, sendStop) {
+export function bindJoystick(commands, sendCommand, sendStop, sendCombined = null) {
   joystickBindings.abort();
   joystickBindings = new AbortController();
   const on = (target, type, handler) => target.addEventListener(type, handler, { signal: joystickBindings.signal });
@@ -18,17 +18,21 @@ export function bindJoystick(commands, sendCommand, sendStop) {
   const findCommand = (direction) => commands.find((command) =>
     aliases[direction].some((name) => normalize(command.nombre || '').includes(normalize(name))) && enabled(command));
 
+  const publishAxes = () => {
+    const drive = activeAxes.get('vertical');
+    const turn = activeAxes.get('horizontal');
+    if (drive && turn && sendCombined) sendCombined(drive, turn);
+    else if (drive || turn) sendCommand(turn || drive);
+    else {
+      sendStop();
+      feedback('Joysticks en posición neutral · se solicitó DETENER', 'EN ESPERA');
+    }
+  };
+  const resetPointers = [];
   const neutralize = (axis) => {
     const hadCommand = activeAxes.delete(axis);
     if (!hadCommand) return;
-    const remaining = [...activeAxes.values()];
-    if (!remaining.length) {
-      sendStop();
-      feedback('Joysticks en posición neutral · se solicitó DETENER', 'EN ESPERA');
-      return;
-    }
-    // El endpoint recibe una orden cada vez. Reafirma el otro eje que sigue sostenido.
-    sendCommand(remaining[remaining.length - 1]);
+    publishAxes();
   };
 
   const apply = (stick, direction) => {
@@ -47,12 +51,13 @@ export function bindJoystick(commands, sendCommand, sendStop) {
     const command = findCommand(direction);
     if (!command) {
       activeAxes.delete(axis);
+      publishAxes();
       feedback(`Falta el comando ${aliases[direction][0]} activo en el catálogo.`, 'SIN ASIGNAR');
       return;
     }
     if (activeAxes.get(axis)?.id_comando === command.id_comando) return;
     activeAxes.set(axis, command);
-    sendCommand(command);
+    publishAxes();
   };
 
   for (const stick of elements.sticks) {
@@ -82,6 +87,7 @@ export function bindJoystick(commands, sendCommand, sendStop) {
     on(stick, 'pointerdown', (event) => {
       if (event.button !== undefined && event.button !== 0) return;
       event.preventDefault();
+      if (pointerId !== null && pointerId !== event.pointerId) return;
       pointerId = event.pointerId;
       try { stick.setPointerCapture(pointerId); } catch { /* El navegador puede no permitir captura. */ }
       apply(stick, directionAt(event));
@@ -110,20 +116,24 @@ export function bindJoystick(commands, sendCommand, sendStop) {
         apply(stick, null);
       }
     });
+    resetPointers.push(() => { pointerId = null; heldKey = null; });
     on(stick, 'blur', () => {
       if (heldKey) { heldKey = null; apply(stick, null); }
-      if (pointerId !== null) releasePointer();
+      // Cambiar el foco al otro joystick no suelta el dedo que sigue apoyado.
     });
   }
 
-  on(window, 'blur', () => {
+  const resetAll = () => {
     const hadActive = activeAxes.size > 0;
     activeAxes.clear();
+    resetPointers.forEach(reset => reset());
     for (const stick of elements.sticks) {
       const knob = stick.querySelector('.stick-knob');
       knob.style.left = '50%';
       knob.style.top = '50%';
     }
     if (hadActive) sendStop();
-  });
+  };
+  on(window, 'blur', resetAll);
+  on(document, 'visibilitychange', () => { if (document.hidden) resetAll(); });
 }

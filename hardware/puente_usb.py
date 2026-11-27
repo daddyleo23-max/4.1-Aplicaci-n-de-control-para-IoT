@@ -43,6 +43,16 @@ def translate(event, unit, allowed, *, now=None, last=0):
     age = (time.time() if now is None else now) - timestamp
     if age < -1 or age > 2 or timestamp <= last:
         return 'X', last
+    if 'comandos' in event:
+        parts = event['comandos']
+        if kind!='movimiento' or not isinstance(parts,list) or len(parts)!=2 or not all(isinstance(c,dict) for c in parts):
+            return 'X',timestamp
+        names = [c.get('comando') for c in parts]
+        drive = next((c for c in names if c in ('ADELANTE','ATRAS')),None)
+        turn = next((c for c in names if c in ('GIRAR_IZQUIERDA','GIRAR_DERECHA')),None)
+        if not drive or not turn or name!=drive or not all(c in allowed for c in names):
+            return 'X',timestamp
+        return COMMANDS[drive]+COMMANDS[turn],timestamp
     if name not in allowed or name not in COMMANDS:
         return 'X', timestamp
     return COMMANDS[name], timestamp
@@ -101,7 +111,7 @@ class Output:
         import serial
         self.serial = serial.Serial(self.port,115200,timeout=.2,write_timeout=.3,exclusive=True)
         # Muchas placas reinician al abrir USB. Esperar sólo al protocolo nuevo.
-        print(f'Puerto {self.port} abierto a 115200. Pulsa EN/RESET ahora (no BOOT); espero READY IOT43/5 durante 20 s.',flush=True)
+        print(f'Puerto {self.port} abierto a 115200. Pulsa EN/RESET ahora (no BOOT); espero READY IOT43/6 durante 20 s.',flush=True)
         await self.identify(timeout=20)
     async def identify(self, *, timeout):
         # readline puede devolver fragmentos al agotar su timeout: acumular hasta NL.
@@ -123,11 +133,11 @@ class Output:
                 if line.startswith(b'READY IOT43/'):
                     text=line.decode('ascii',errors='replace')
                     print('USB:',text,flush=True)
-                    if line!=b'READY IOT43/5':
+                    if line!=b'READY IOT43/6':
                         self.close()
-                        raise RuntimeError('La placa anunció '+text+'; el puente actual requiere READY IOT43/5. Abre el .ino actualizado, compila y vuelve a cargarlo.')
+                        raise RuntimeError('La placa anunció '+text+'; el puente actual requiere READY IOT43/6. Abre el .ino actualizado, compila y vuelve a cargarlo.')
                     self.verified = True
-                    print('Firmware IOT43/5 identificado; salidas todavía detenidas.',flush=True)
+                    print('Firmware IOT43/6 identificado; salidas todavía detenidas.',flush=True)
                     return
                 if line and shown<8:
                     # Sólo trazas de arranque conocidas, nunca volcar contenido arbitrario.
@@ -138,7 +148,7 @@ class Output:
         self.close()
         if not received:
             raise RuntimeError('No llegó ningún byte del ESP32. El puerto se abrió, pero no se recibió el arranque al pulsar EN. Revisa que sea el mismo puerto del monitor y que no haya otro monitor abierto.')
-        raise RuntimeError(f'Se recibieron {received} bytes USB, pero no el saludo completo READY IOT43/5. Comprueba la versión que aparece en el monitor serie; no se habilitó movimiento.')
+        raise RuntimeError(f'Se recibieron {received} bytes USB, pero no el saludo completo READY IOT43/6. Comprueba la versión que aparece en el monitor serie; no se habilitó movimiento.')
     def send(self, command):
         if self.serial and self.verified: self.serial.write((command+'\n').encode())
         elif self.serial: raise RuntimeError('Firmware sin identificar; no se envían órdenes.')

@@ -1,3 +1,6 @@
+let compositeControl = false;
+export function setControlCapabilities(value) { compositeControl = value?.control_compuesto === true; }
+export function supportsCompositeControl() { return compositeControl; }
 let selectedVehicleId = 1;
 let vehicleSelected = false;
 let supportScope = null;

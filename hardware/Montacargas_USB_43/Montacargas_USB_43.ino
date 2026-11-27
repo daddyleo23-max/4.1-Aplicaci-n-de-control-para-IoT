@@ -1,5 +1,5 @@
 // ESP32 + 2 x 74HC595 + PC817. Pines del sketch numérico confirmado por el usuario.
-// Protocolo USB IOT43/5: no acepta las letras del firmware anterior.
+// Protocolo USB IOT43/6: no acepta las letras del firmware anterior.
 // Sólo sustituye el firmware cuando el cableado y las salidas se hayan comprobado.
 #include <Arduino.h>
 const uint8_t DS_PIN=5, SHCP_PIN=19, STCP_PIN=18;
@@ -32,7 +32,7 @@ void parar(){movimiento=toque=0;pulsoActivo=false;movimientoManual=false;salida(
 void procesar(const char* orden){
   uint32_t ahora=millis();
   if(!strcmp(orden,"X")){parar();Serial.println("STOP");return;}
-  if(!strcmp(orden,"HELLO")){armado=false;parar();Serial.println("READY IOT43/5");return;}
+  if(!strcmp(orden,"HELLO")){armado=false;parar();Serial.println("READY IOT43/6");return;}
   if(!strcmp(orden,"DISARM")){armado=false;parar();return;}
   if(!strcmp(orden,"ARM")){parar();armado=true;ultimoHeartbeat=ahora;Serial.println("ARMED");return;}
   if(!armado)return;
@@ -42,10 +42,12 @@ void procesar(const char* orden){
     return;
   }
   if(strncmp(orden,"C ",2))return;
-  char letra=0, extra=0; unsigned long duracion=0;
-  if(sscanf(orden,"C %c %lu %c",&letra,&duracion,&extra)!=2 || duracion>10000){parar();return;}
+  char letras[3]={0}, extra=0; unsigned long duracion=0;
+  if(sscanf(orden,"C %2s %lu %c",letras,&duracion,&extra)!=2 || duracion>10000){parar();return;}
+  bool combinado=(strlen(letras)==2);
+  if(combinado && !((letras[0]=='W'||letras[0]=='S') && (letras[1]=='A'||letras[1]=='D'))){parar();return;}
   uint16_t mascara=0;
-  switch(letra){
+  switch(letras[0]){
     case 'W':mascara=(uint16_t)(1U<<BIT_ADELANTE);break;
     case 'S':mascara=(uint16_t)(1U<<BIT_ATRAS);break;
     case 'A':mascara=(uint16_t)(1U<<BIT_IZQUIERDA);break;
@@ -65,6 +67,7 @@ void procesar(const char* orden){
       salida();Serial.println("APPLIED SHORT HORN");return;
     default:parar();Serial.println("UNVERIFIED CHANNEL: STOP");return;
   }
+  if(combinado)mascara|=(uint16_t)(1U<<(letras[1]=='A'?BIT_IZQUIERDA:BIT_DERECHA));
   movimiento=mascara;inicioMovimiento=ahora;
   movimientoManual=(duracion==0);
   duracionMovimiento=movimientoManual?RENOVACION_MOVIMIENTO_MS:duracion;
@@ -73,7 +76,7 @@ void procesar(const char* orden){
 void setup(){
   pinMode(DS_PIN,OUTPUT);pinMode(SHCP_PIN,OUTPUT);pinMode(STCP_PIN,OUTPUT);
   digitalWrite(DS_PIN,LOW);digitalWrite(SHCP_PIN,LOW);digitalWrite(STCP_PIN,LOW);
-  parar();Serial.begin(115200);Serial.println("READY IOT43/5");
+  parar();Serial.begin(115200);Serial.println("READY IOT43/6");
 }
 void loop(){
   uint32_t ahora=millis();

@@ -7,6 +7,10 @@ class MovimientoRequest(BaseModel):
         description="Identificador del comando que se desea ejecutar.",
         examples=[2],
     )
+    id_comando_giro: int | None = Field(
+        default=None, gt=0,
+        description="Opcional: giro izquierdo/derecho simultáneo con ADELANTE o ATRAS. Requiere reserva y canal de control; no se admite en Invitado.",
+    )
 
 # Modelos CRUD para la API IoT
 from pydantic import BaseModel, Field

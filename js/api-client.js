@@ -1,4 +1,4 @@
-import { config } from './config.js';
+import { config, setControlCapabilities } from './config.js';
 import { requireControlGrant } from './control-session.js';
 import { getWriteHeaders } from './auth-session.js';
 import { sessionHeaders, currentToken } from './account-session.js';
@@ -40,17 +40,17 @@ function writeHeaders() {
 }
 
 export const api = {
-  async root() { return (await request(config.apiHealthPath)).data; },
+  async root() { const data = (await request(config.apiHealthPath)).data; setControlCapabilities(data); return data; },
   async databaseHealth() { return (await request(config.databaseHealthPath)).data; },
   async vehicle() { return (await request(`/vehiculos/${config.vehicleId}`)).data; },
   async vehicleState() { return (await request(`/vehiculos/${config.vehicleId}/estado`)).data; },
   async vehicleHistory() { return (await request(`/vehiculos/${config.vehicleId}/historial`)).data; },
   async commands() { return (await request(`/vehiculos/${config.vehicleId}/comandos`)).data; },
   async demos() { return (await request(`/vehiculos/${config.vehicleId}/demos`)).data; },
-  async move(idCommand) {
+  async move(idCommand, turnCommand = null) {
     requireControlGrant();
     const headers = writeHeaders();
-    return request(`/vehiculos/${config.vehicleId}/movimientos`, { method: 'POST', headers, body: { id_comando: idCommand } });
+    return request(`/vehiculos/${config.vehicleId}/movimientos`, { method: 'POST', headers, body: { id_comando: idCommand, ...(turnCommand ? { id_comando_giro: turnCommand } : {}) } });
   },
   async startDemo(idDemo) {
     requireControlGrant();

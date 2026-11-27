@@ -136,7 +136,7 @@ class ControlService:
             with suppress(Exception):
                 await ws.close(code=1000)
 
-    async def move(self, session, unit, command_id):
+    async def move(self, session, unit, command_id, secondary_id=None):
         lease = await self.lease(session,unit)
         control = lease['id_control']
         async def execute():
@@ -144,6 +144,11 @@ class ControlService:
             command = next((c for c in commands if c['id_comando']==command_id and c['activo']),None)
             if not command:
                 raise HTTPException(404,'Comando no encontrado o inactivo.')
+            secondary = None
+            if secondary_id is not None and command['nombre']!='DETENER':
+                secondary = next((c for c in commands if c['id_comando']==secondary_id and c['activo']),None)
+                if not secondary or command['nombre'] not in ('ADELANTE','ATRAS') or secondary['nombre'] not in ('GIRAR_IZQUIERDA','GIRAR_DERECHA'):
+                    raise HTTPException(409,'Combina sólo ADELANTE/ATRAS con un giro activo de la misma unidad.')
             if command['nombre']=='DEMO':
                 raise HTTPException(400,'Utiliza el endpoint específico para iniciar una demo.')
             while True:
@@ -157,8 +162,22 @@ class ControlService:
                         demo = running
                     else:
                         # Revalidar en SQL dentro de la misma transacción del movimiento.
-                        row = (await self.db('sp_control_mover',(control,session['id_sesion'],unit,command_id),True,
-                            guards=[] if command['nombre']=='DETENER' else [('sp_capacidad_exigir',(unit,command_id))]))[0]
+                        if secondary is None:
+                            row = (await self.db('sp_control_mover',(control,session['id_sesion'],unit,command_id),True,
+                                guards=[] if command['nombre']=='DETENER' else [('sp_capacidad_exigir',(unit,command_id))]))[0]
+                        else:
+                            # Validar ambos y registrar cada componente en UNA transacción.
+                            # El último estado/registro sigue siendo el comando individual principal.
+                            operations = [('sp_capacidad_exigir',(unit,c['id_comando'])) for c in (command,secondary)]
+                            operations += [('sp_control_mover',(control,session['id_sesion'],unit,c['id_comando'])) for c in (secondary,command)]
+                            try:
+                                await asyncio.to_thread(self.repository.ejecutar_transaccion,operations)
+                            except pymysql.MySQLError as error:
+                                code = 409 if error.args[0] in (1644,1062,1205,1213) else 503
+                                raise HTTPException(code,'No se pudo registrar el movimiento combinado; no se publicó la orden.') from error
+                            def component(c):
+                                return {'id_comando':c['id_comando'],'comando':c['nombre'],'codigo':c['codigo']}
+                            row = {'id_vehiculo':unit,**component(command),'comandos':[component(command),component(secondary)]}
                         await self.publish(row)
                         return {'mensaje':'Movimiento registrado correctamente.',**row}
                 if demo:
