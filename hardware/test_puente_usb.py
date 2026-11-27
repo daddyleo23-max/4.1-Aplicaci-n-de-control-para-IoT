@@ -30,10 +30,10 @@ class ProtocolTests(unittest.TestCase):
         for kind in ['demo_fin','demo_error','demo_cancelada']:
             self.assertEqual(translate({'tipo':kind,'id_vehiculo':1},1,set())[0],'X')
     def test_confirmed_functions_and_unverified_actions(self):
-        expected={'ATRAS':'S','GIRAR_IZQUIERDA':'A','GIRAR_DERECHA':'D','SUBIR_HORQUILLA':'E','BAJAR_HORQUILLA':'Q','SONIDO':'N'}
+        expected={'ATRAS':'S','GIRAR_IZQUIERDA':'A','GIRAR_DERECHA':'D','SUBIR_HORQUILLA':'E','BAJAR_HORQUILLA':'Q','SONIDO':'N','VELOCIDAD':'V'}
         for name,letter in expected.items():
             self.assertEqual(translate(self.event(comando=name),1,{name},now=101)[0],letter)
-        for name in ('LUCES','VELOCIDAD','POWER','DEMO'):
+        for name in ('LUCES','POWER','DEMO'):
             self.assertEqual(translate(self.event(comando=name),1,{name},now=101)[0],'X')
     def test_unknown_firmware_is_never_written_even_on_exit(self):
         class Port:
@@ -167,7 +167,7 @@ class LauncherTests(unittest.TestCase):
                 self.assertIn('GIRAR_IZQUIERDA',args)
                 self.assertIn('SONIDO',args)
                 self.assertNotIn('POWER',args)
-                self.assertNotIn('VELOCIDAD',args)
+                self.assertIn('VELOCIDAD',args)
                 self.assertEqual(args[args.index('--unidad')+1],'1')
 
 if __name__=='__main__': unittest.main()

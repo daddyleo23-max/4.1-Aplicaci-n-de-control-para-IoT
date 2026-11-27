@@ -1,6 +1,6 @@
 # Identificar canales del mando
 
-Sketch independiente: reemplaza temporalmente al firmware del puente. No ejecutar `puente_usb.py` con este diagnóstico cargado. No anuncia READY IOT43/4 y no entiende su protocolo.
+Sketch independiente: reemplaza temporalmente al firmware del puente. No ejecutar `puente_usb.py` con este diagnóstico cargado. No anuncia READY IOT43/5 y no entiende su protocolo.
 
 Pines confirmados: DS GPIO5; STCP/latch GPIO18; SHCP/reloj GPIO19. Mantiene la secuencia de escritura de dos bytes del programa funcional, con 20 microsegundos entre bytes y latch HIGH→LOW.
 
@@ -23,7 +23,7 @@ Diez cables conectados no aseguran que correspondan a canales 1..10. Hay 16 posi
 | 3 | Retroceso confirmado |
 | 4 | Claxon |
 | 5 | |
-| 6 | Posible velocidad, por confirmar |
+| 6 | Velocidad confirmada |
 | 7 | Subir pala |
 | 8 | |
 | 9 | |

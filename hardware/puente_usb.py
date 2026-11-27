@@ -11,7 +11,7 @@ import urllib.request
 from urllib.parse import urlsplit
 
 COMMANDS = {'ADELANTE':'W','ATRAS':'S','GIRAR_IZQUIERDA':'A','GIRAR_DERECHA':'D',
-            'SUBIR_HORQUILLA':'E','BAJAR_HORQUILLA':'Q','SONIDO':'N','DETENER':'X'}
+            'SUBIR_HORQUILLA':'E','BAJAR_HORQUILLA':'Q','SONIDO':'N','VELOCIDAD':'V','DETENER':'X'}
 STOP_EVENTS = {'demo_fin','demo_cancelada','demo_error'}
 PING_TIMEOUT_S = 3.0
 LEASE_TIMEOUT_S = 3.0
@@ -101,16 +101,16 @@ class Output:
         import serial
         self.serial = serial.Serial(self.port,115200,timeout=.2,write_timeout=.3,exclusive=True)
         # Muchas placas reinician al abrir USB. Esperar sólo al protocolo nuevo.
-        print(f'Puerto {self.port} abierto a 115200. Pulsa EN/RESET ahora (no BOOT); espero READY IOT43/4 durante 20 s.',flush=True)
+        print(f'Puerto {self.port} abierto a 115200. Pulsa EN/RESET ahora (no BOOT); espero READY IOT43/5 durante 20 s.',flush=True)
         end = time.monotonic()+20
         while time.monotonic()<end:
             line = await asyncio.to_thread(self.serial.readline)
-            if line.strip() == b'READY IOT43/4':
+            if line.strip() == b'READY IOT43/5':
                 self.verified = True
-                print('Firmware IOT43/4 identificado; salidas todavía detenidas.',flush=True)
+                print('Firmware IOT43/5 identificado; salidas todavía detenidas.',flush=True)
                 return
         self.close()
-        raise RuntimeError('No se recibió READY IOT43/4 durante la espera. Esto no demuestra que falte el firmware. Cierra el monitor serie y pulsa EN/RESET cuando el puente indique que abrió el puerto.')
+        raise RuntimeError('No se recibió READY IOT43/5 durante la espera. Esto no demuestra que falte el firmware. Cierra el monitor serie y pulsa EN/RESET cuando el puente indique que abrió el puerto.')
     def send(self, command):
         if self.serial and self.verified: self.serial.write((command+'\n').encode())
         elif self.serial: raise RuntimeError('Firmware sin identificar; no se envían órdenes.')
@@ -220,9 +220,9 @@ async def relay(api, args, output):
                     stop()  # Cancelar el paso previo antes de comenzar otro; nunca dejar su temporizador pendiente.
                 if not state['armed']:
                     output.send('ARM'); output.send('H'); state['armed'] = True
-                if command != 'N': motion.begin(command,duration)
+                if command not in ('N','V'): motion.begin(command,duration)
                 output.send(f'C {command} {duration}')
-                print('Orden nueva:',command,'(claxon corto)' if command=='N' else ('paso '+str(duration)+' ms') if is_demo else '(manual hasta DETENER)')
+                print('Orden nueva:',command,'(pulso corto)' if command in ('N','V') else ('paso '+str(duration)+' ms') if is_demo else '(manual hasta DETENER)')
             closed = getattr(ws,'close_code',None)
             raise RuntimeError(f'El servidor cerró el canal WSS (código {closed}). STOP solicitado; no se reconecta ni reproduce órdenes.')
         tasks = [asyncio.create_task(f()) for f in (watch_lease,ping,heartbeat,receive,serial_feedback)]

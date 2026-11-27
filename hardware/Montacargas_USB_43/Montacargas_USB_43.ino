@@ -1,16 +1,16 @@
 // ESP32 + 2 x 74HC595 + PC817. Pines del sketch numérico confirmado por el usuario.
-// Protocolo USB IOT43/4: no acepta las letras del firmware anterior.
+// Protocolo USB IOT43/5: no acepta las letras del firmware anterior.
 // Sólo sustituye el firmware cuando el cableado y las salidas se hayan comprobado.
 #include <Arduino.h>
 const uint8_t DS_PIN=5, SHCP_PIN=19, STCP_PIN=18;
 // Numeración del diagnóstico = bit + 1; sólo funciones identificadas por el usuario.
-const uint8_t BIT_ADELANTE=1, BIT_ATRAS=2, BIT_CLAXON=3;
+const uint8_t BIT_ADELANTE=1, BIT_ATRAS=2, BIT_CLAXON=3, BIT_VELOCIDAD=5;
 const uint8_t BIT_SUBIR=6, BIT_IZQUIERDA=11, BIT_DERECHA=12, BIT_BAJAR=14;
 // Corrección del usuario: canal 12=izquierda, canal 13=derecha.
-// Canal 6: posible velocidad; canal 10: demo autónoma. Ambos deshabilitados.
+// Canal 6=velocidad, confirmado. Canal 10=demo autónoma: deshabilitado.
 const uint32_t CLAXON_MS=250, DESCANSO_CLAXON_MS=1000;
-uint32_t ultimoClaxon=0;
-bool claxonProbado=false;
+uint32_t ultimoClaxon=0, ultimaVelocidad=0;
+bool claxonProbado=false, velocidadProbada=false;
 const uint32_t WATCHDOG_MS=800, RENOVACION_MOVIMIENTO_MS=900;
 uint16_t movimiento=0, toque=0;
 uint32_t ultimoHeartbeat=0, inicioMovimiento=0, finToque=0, duracionMovimiento=0;
@@ -32,7 +32,7 @@ void parar(){movimiento=toque=0;pulsoActivo=false;movimientoManual=false;salida(
 void procesar(const char* orden){
   uint32_t ahora=millis();
   if(!strcmp(orden,"X")){parar();Serial.println("STOP");return;}
-  if(!strcmp(orden,"HELLO")){armado=false;parar();Serial.println("READY IOT43/4");return;}
+  if(!strcmp(orden,"HELLO")){armado=false;parar();Serial.println("READY IOT43/5");return;}
   if(!strcmp(orden,"DISARM")){armado=false;parar();return;}
   if(!strcmp(orden,"ARM")){parar();armado=true;ultimoHeartbeat=ahora;Serial.println("ARMED");return;}
   if(!armado)return;
@@ -52,6 +52,11 @@ void procesar(const char* orden){
     case 'D':mascara=(uint16_t)(1U<<BIT_DERECHA);break;
     case 'E':mascara=(uint16_t)(1U<<BIT_SUBIR);break;
     case 'Q':mascara=(uint16_t)(1U<<BIT_BAJAR);break;
+    case 'V':
+      if(pulsoActivo || (velocidadProbada && (uint32_t)(ahora-ultimaVelocidad)<1000))return;
+      toque=(uint16_t)(1U<<BIT_VELOCIDAD);pulsoActivo=true;
+      finToque=ahora+250;ultimaVelocidad=ahora;velocidadProbada=true;
+      salida();Serial.println("APPLIED SPEED PULSE");return;
     case 'N':
       // Nunca prolongar el toque por repeticiones ni activar la función de apagado.
       if(pulsoActivo || (claxonProbado && (uint32_t)(ahora-ultimoClaxon)<DESCANSO_CLAXON_MS))return;
@@ -68,7 +73,7 @@ void procesar(const char* orden){
 void setup(){
   pinMode(DS_PIN,OUTPUT);pinMode(SHCP_PIN,OUTPUT);pinMode(STCP_PIN,OUTPUT);
   digitalWrite(DS_PIN,LOW);digitalWrite(SHCP_PIN,LOW);digitalWrite(STCP_PIN,LOW);
-  parar();Serial.begin(115200);Serial.println("READY IOT43/4");
+  parar();Serial.begin(115200);Serial.println("READY IOT43/5");
 }
 void loop(){
   uint32_t ahora=millis();
