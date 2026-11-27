@@ -149,10 +149,8 @@ export function renderCommands(commands, { onCommand, onDemo, onUnavailable, onS
   }
 
   const horn = findCommand(commands, ['SONIDO', 'CLAXON', 'HORN']);
-  const lights = findCommand(commands, ['LUCES', 'LUZ', 'LIGHTS', 'LIGHT']);
   // SONIDO se conserva como claxon. La música requiere un comando propio porque el firmware
   // recibe un único id_comando y no puede inferir qué control físico originó el mismo código.
-  const music = findCommand(commands, ['MUSICA', 'MUSIC']);
   const power = findCommand(commands, ['POWER', 'ENCENDER']);
   const center = $('#key-power-horn');
   if (center) {
@@ -168,17 +166,12 @@ export function renderCommands(commands, { onCommand, onDemo, onUnavailable, onS
 
   const combined = $('#key-light-sound');
   if (combined) {
-    const shortAction = lights;
-    const longAction = music;
-    combined.disabled = !shortAction && !longAction;
-    combined.dataset.available = String(Boolean(shortAction || longAction));
-    combined.dataset.longAvailable = String(Boolean(longAction));
-    combined.title = longAction
-      ? 'Pulsación corta: luces. Pulsación larga: música.'
-      : 'Pulsación corta: luces. Música todavía no tiene un comando separado en el catálogo.';
-    bindTimedButton(combined, shortAction, longAction,
-      (command) => command ? onCommand(command) : onUnavailable('Luces no está activo en el catálogo.'),
-      (command) => command ? onCommand(command) : onUnavailable('Música todavía no tiene un comando separado en el catálogo; no se envió una orden.'));
+    // Canal físico sin confirmar: no registrar manejadores que envíen órdenes.
+    combined.disabled = true;
+    combined.dataset.available = 'false';
+    combined.dataset.longAvailable = 'false';
+    combined.setAttribute('aria-disabled', 'true');
+    combined.title = 'Luces y sonido de la máquina no disponibles: salida física sin verificar. No envía órdenes.';
   }
 
   document.querySelectorAll('[data-stick-axis]').forEach((stick) => {

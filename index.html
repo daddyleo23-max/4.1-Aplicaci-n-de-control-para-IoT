@@ -120,7 +120,7 @@
                 <span class="stick-caption">GIRO IZQUIERDA <i>·</i> DERECHA</span>
               </div>
               <button class="physical-key speed-key" id="key-speed" type="button" aria-label="Ajustar velocidad"><svg class="button-icon" aria-hidden="true"><use href="#icon-speed"></use></svg><span class="key-caption">VELOCIDAD</span></button>
-              <button class="physical-key light-sound-key" id="key-light-sound" type="button" aria-label="Pulsación corta: luces. Pulsación larga: música."><svg class="button-icon" aria-hidden="true"><use href="#icon-light-sound"></use></svg><span class="key-caption">LUZ <i>·</i> MÚSICA*</span></button>
+              <button class="physical-key light-sound-key" id="key-light-sound" type="button" disabled aria-disabled="true" aria-label="Luces y sonido de la máquina no disponibles. No envía órdenes." title="Salida física sin verificar. No envía órdenes."><svg class="button-icon" aria-hidden="true"><use href="#icon-light-sound"></use></svg><span class="key-caption">LUZ <i>·</i> SONIDO<br>NO DISPONIBLE</span></button>
               <button class="physical-key fork-up-key" id="key-fork-up" type="button" aria-label="Subir horquilla"><svg class="button-icon" aria-hidden="true"><use href="#icon-fork-up"></use></svg><span class="key-caption">SUBIR</span></button>
               <button class="physical-key demo-key" id="key-demo" type="button" aria-label="Iniciar la DEMO seleccionada"><svg class="button-icon" aria-hidden="true"><use href="#icon-gear"></use></svg><span class="key-caption">AUTO DEMO</span></button>
               <button class="physical-key fork-down-key" id="key-fork-down" type="button" aria-label="Bajar horquilla"><svg class="button-icon" aria-hidden="true"><use href="#icon-fork-down"></use></svg><span class="key-caption">BAJAR</span></button>
@@ -130,7 +130,7 @@
               <button class="stop-button" id="stop-button" type="button"><span aria-hidden="true">■</span> DETENER</button>
             </div>
           </div>
-          <p class="safety-note remote-note"><span aria-hidden="true">ⓘ</span> Pulsación corta: claxon o luces. Mantener pulsado: encender* o música*. * Requieren habilitarse por separado en firmware y catálogo; la API no confirma movimiento físico.</p>
+          <p class="safety-note remote-note"><span aria-hidden="true">ⓘ</span> Claxon: pulsación corta. Encendido remoto no habilitado. Luces y sonido de la máquina: no disponibles; su botón no envía órdenes. La API no confirma movimiento físico.</p>
         </section>
 
           <section class="panel demo-panel" aria-labelledby="demo-title">
