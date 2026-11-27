@@ -69,11 +69,14 @@ configureAuthPanel();
 
 function sendCommand(command, { priority = false } = {}) {
   if (!command || command.activo === false || command.activo === 0) return;
+  if (stopInFlight && !priority) { feedback('Espera a que termine DETENER antes de iniciar otro movimiento.'); return; }
   if (demoRunning && command.nombre?.toUpperCase() !== 'DETENER') { feedback('Cancela la DEMO antes de enviar otro comando.', 'DEMO ACTIVA'); return; }
   const epoch = ++requestEpoch;
   const accountToken = currentToken();
   const vehicleId = config.vehicleId;
   const submit = async () => {
+    // No ejecutar un movimiento encolado que ya fue reemplazado o soltado.
+    if (!priority && epoch !== requestEpoch) return;
     if (config.sessionAuth && (!accountToken || accountToken !== currentToken() || vehicleId !== config.vehicleId)) return;
     if (epoch === requestEpoch || priority) feedback(`Enviando ${command.nombre}…`, command.nombre);
     try {
@@ -135,6 +138,7 @@ async function loadInitialData() {
     stopCommand = commands.find((item) => item.nombre?.trim().toUpperCase() === 'DETENER' && item.activo !== false && item.activo !== 0) || null;
     renderCommands(commands, {
       onCommand: (command) => sendCommand(command),
+      onStop: stopVehicle,
       onDemo: () => {
         if (window.matchMedia('(max-width:1000px) and (orientation:landscape)').matches || document.body.classList.contains('control-expanded')) {
           openDemoPanel();

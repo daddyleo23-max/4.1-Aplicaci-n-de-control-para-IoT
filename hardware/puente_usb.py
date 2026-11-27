@@ -23,13 +23,17 @@ def translate(event, unit, allowed, *, now=None, last=0):
     if not isinstance(event, dict) or event.get('id_vehiculo') != unit:
         return None, last
     kind = event.get('tipo')
-    if kind in STOP_EVENTS:
+    if kind in STOP_EVENTS or (kind=='movimiento' and event.get('comando')=='DETENER') or (kind=='demo_movimiento' and event.get('comando')=='DETENER'):
+        # STOP siempre se atiende y marca el orden temporal: un movimiento anterior
+        # que llegue tarde no debe volver a arrancar después de esa parada.
+        try:
+            date=datetime.fromisoformat(event['timestamp'].replace('Z','+00:00'))
+            if date.tzinfo: last=max(last,date.timestamp())
+        except (KeyError,ValueError,TypeError,AttributeError): pass
         return 'X', last
     if kind not in ('movimiento','demo_movimiento'):
         return None, last
     name = event.get('comando')
-    if name == 'DETENER':
-        return 'X', last
     try:
         date = datetime.fromisoformat(event['timestamp'].replace('Z','+00:00'))
         if date.tzinfo is None: return 'X', last
@@ -42,6 +46,23 @@ def translate(event, unit, allowed, *, now=None, last=0):
     if name not in allowed or name not in COMMANDS:
         return 'X', timestamp
     return COMMANDS[name], timestamp
+
+
+class Motion:
+    """Una orden manual se renueva; un paso de demo siempre tiene vencimiento."""
+    def __init__(self): self.clear()
+    def clear(self): self.command, self.deadline = None, None
+    def begin(self, command, duration_ms=0, *, now=None):
+        self.command = command
+        self.deadline = (time.monotonic() if now is None else now)+duration_ms/1000 if duration_ms else None
+    def expired(self, *, now=None):
+        return self.deadline is not None and (time.monotonic() if now is None else now)>=self.deadline
+    def renewable(self): return self.command is not None and self.deadline is None
+
+
+class ApiFailure(RuntimeError):
+    def __init__(self, message, *, transient=False):
+        super().__init__(message); self.transient = transient
 
 
 class API:
@@ -57,16 +78,16 @@ class API:
                 return json.load(response)
         except urllib.error.HTTPError as error:
             if path == '/auth/login' and error.code == 401:
-                raise RuntimeError('Login rechazado (HTTP 401): revisa el correo y la contraseña de APLICACIÓN del comprador; no uses las credenciales de RDS.') from None
-            raise RuntimeError(f'{path}: API HTTP {error.code}; revisa la sesión y los permisos.') from None
+                raise ApiFailure('Login rechazado (HTTP 401): revisa el correo y la contraseña de APLICACIÓN del comprador; no uses las credenciales de RDS.') from None
+            raise ApiFailure(f'{path}: API HTTP {error.code}; revisa la sesión y los permisos.', transient=error.code in (429,502,503,504)) from None
         except TimeoutError:
-            raise RuntimeError(f'{path}: la API agotó el tiempo de espera; comprueba el backend y Caddy.') from None
+            raise ApiFailure(f'{path}: la API agotó el tiempo de espera; comprueba el backend y Caddy.', transient=True) from None
         except urllib.error.URLError as error:
             if isinstance(error.reason,ssl.SSLCertVerificationError):
-                raise RuntimeError(f'{path}: no se pudo validar el certificado HTTPS. No se desactiva TLS.') from None
+                raise ApiFailure(f'{path}: no se pudo validar el certificado HTTPS. No se desactiva TLS.') from None
             if isinstance(error.reason,TimeoutError):
-                raise RuntimeError(f'{path}: se agotó el tiempo para conectar con la API.') from None
-            raise RuntimeError(f'{path}: no se pudo conectar a la API ({type(error.reason).__name__}). Revisa servidor, red e IP pública.') from None
+                raise ApiFailure(f'{path}: se agotó el tiempo para conectar con la API.', transient=True) from None
+            raise ApiFailure(f'{path}: no se pudo conectar a la API ({type(error.reason).__name__}). Revisa servidor, red e IP pública.', transient=True) from None
 
 
 class Output:
@@ -80,21 +101,21 @@ class Output:
         import serial
         self.serial = serial.Serial(self.port,115200,timeout=.2,write_timeout=.3,exclusive=True)
         # Muchas placas reinician al abrir USB. Esperar sólo al protocolo nuevo.
-        print(f'Puerto {self.port} abierto a 115200. Pulsa EN/RESET ahora (no BOOT); espero READY IOT43/3 durante 20 s.',flush=True)
+        print(f'Puerto {self.port} abierto a 115200. Pulsa EN/RESET ahora (no BOOT); espero READY IOT43/4 durante 20 s.',flush=True)
         end = time.monotonic()+20
         while time.monotonic()<end:
             line = await asyncio.to_thread(self.serial.readline)
-            if line.strip() == b'READY IOT43/3':
+            if line.strip() == b'READY IOT43/4':
                 self.verified = True
-                print('Firmware IOT43/3 identificado; salidas todavía detenidas.',flush=True)
+                print('Firmware IOT43/4 identificado; salidas todavía detenidas.',flush=True)
                 return
         self.close()
-        raise RuntimeError('No se recibió READY IOT43/3 durante la espera. Esto no demuestra que falte el firmware. Cierra el monitor serie y pulsa EN/RESET cuando el puente indique que abrió el puerto.')
+        raise RuntimeError('No se recibió READY IOT43/4 durante la espera. Esto no demuestra que falte el firmware. Cierra el monitor serie y pulsa EN/RESET cuando el puente indique que abrió el puerto.')
     def send(self, command):
         if self.serial and self.verified: self.serial.write((command+'\n').encode())
         elif self.serial: raise RuntimeError('Firmware sin identificar; no se envían órdenes.')
-        elif command != 'H' and command != self.last: print('SIMULACIÓN USB:',command)
-        if command != 'H': self.last = command
+        elif command not in ('H','R') and command != self.last: print('SIMULACIÓN USB:',command)
+        if command not in ('H','R'): self.last = command
     def close(self):
         if self.serial:
             try:
@@ -106,9 +127,10 @@ async def relay(api, args, output):
     from websockets.asyncio.client import connect
     origin = urlsplit(api.origin)
     url = 'wss://'+origin.netloc+'/ws/vehiculos/'+str(args.unidad)
-    state = {'lease':False,'checked':0.0,'pong':0.0,'command':False}
+    state = {'lease':False,'checked':0.0,'pong':0.0,'armed':False}
+    motion = Motion()
     def stop():
-        output.send('X'); state['command'] = False
+        output.send('X'); motion.clear()
     async with connect(url, open_timeout=8, ping_interval=None, max_queue=1, max_size=32768) as ws:
         await ws.send(json.dumps({'tipo':'autenticar','token':api.token}))
         initial = json.loads(await asyncio.wait_for(ws.recv(),5))
@@ -118,14 +140,21 @@ async def relay(api, args, output):
         print('Canal autorizado. No se reproduce el estado anterior.')
         async def watch_lease():
             while True:
-                data = await asyncio.to_thread(api.call,f'/vehiculos/{args.unidad}/control')
+                try:
+                    data = await asyncio.to_thread(api.call,f'/vehiculos/{args.unidad}/control')
+                except ApiFailure as error:
+                    state['lease'] = False; state['checked'] = 0; stop()
+                    if not error.transient: raise
+                    print('Reserva sin verificar: STOP. Se reintentará sin reanudar la orden anterior.')
+                    await asyncio.sleep(1)
+                    continue
                 reserved = data.get('reservada') is True and data.get('estado')=='ACTIVA'
                 if reserved != state['lease'] or not state['checked']:
                     print('Reserva:', 'ACTIVA' if reserved else 'sin control activo; adquiere control desde la web.')
                 state['lease'] = reserved
                 state['checked'] = time.monotonic()
                 if not state['lease']: stop()
-                await asyncio.sleep(.3)
+                await asyncio.sleep(.8)
         async def ping():
             while True:
                 started = time.monotonic()
@@ -143,21 +172,26 @@ async def relay(api, args, output):
             now = time.monotonic()
             return state['lease'] and now-state['checked']<FRESH_LINK_S and now-state['pong']<FRESH_LINK_S
         async def heartbeat():
-            was_live = False
             while True:
                 healthy = live()
                 if healthy:
-                    if not was_live: output.send('ARM')
+                    if not state['armed']:
+                        output.send('ARM'); state['armed'] = True
                     output.send('H')
-                else: stop()
-                was_live = healthy
+                    if motion.expired():
+                        stop(); print('Paso de demo terminado; salidas liberadas durante la pausa.')
+                    elif motion.renewable(): output.send('R')
+                else:
+                    stop(); state['armed'] = False
                 await asyncio.sleep(.15)
         async def serial_feedback():
             while True:
                 if output.serial:
                     line = await asyncio.to_thread(output.serial.readline)
-                    if line.strip() in (b'WATCHDOG STOP',b'LIMIT STOP'):
-                        print('ESP32:',line.decode().strip(),'; se requiere una orden nueva.')
+                    if line.strip() in (b'WATCHDOG STOP',b'LEASE STOP',b'STEP STOP'):
+                        if line.strip()==b'WATCHDOG STOP':
+                            stop(); state['armed'] = False
+                        print('ESP32:',line.decode().strip(),'; salida liberada, no se repite la orden anterior.')
                 else: await asyncio.sleep(.2)
         async def receive():
             last = 0
@@ -177,8 +211,18 @@ async def relay(api, args, output):
                     if getattr(args,'diagnostico',False):
                         print('STOP:', 'DETENER, límite o evento rechazado.' if command=='X' else 'reserva o verificación de enlace sin vigencia.')
                     stop(); continue
-                output.send('C '+command)
-                print('Orden nueva:',command)
+                duration = 0
+                is_demo = event.get('tipo')=='demo_movimiento'
+                if is_demo:
+                    duration = event.get('duracion_ms')
+                    if type(duration) is not int or not 1<=duration<=10000:
+                        stop(); print('STOP: duración de demo inválida.'); continue
+                    stop()  # Cancelar el paso previo antes de comenzar otro; nunca dejar su temporizador pendiente.
+                if not state['armed']:
+                    output.send('ARM'); output.send('H'); state['armed'] = True
+                if command != 'N': motion.begin(command,duration)
+                output.send(f'C {command} {duration}')
+                print('Orden nueva:',command,'(claxon corto)' if command=='N' else ('paso '+str(duration)+' ms') if is_demo else '(manual hasta DETENER)')
             closed = getattr(ws,'close_code',None)
             raise RuntimeError(f'El servidor cerró el canal WSS (código {closed}). STOP solicitado; no se reconecta ni reproduce órdenes.')
         tasks = [asyncio.create_task(f()) for f in (watch_lease,ping,heartbeat,receive,serial_feedback)]

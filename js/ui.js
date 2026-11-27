@@ -1,3 +1,4 @@
+import { bindHoldCommand } from './hold-command.js';
 const $ = (selector) => document.querySelector(selector);
 
 export function setStatus(id, state, label, detail) {
@@ -119,18 +120,24 @@ function bindTimedButton(button, shortCommand, longCommand, onShort, onLong, thr
   });
 }
 
-export function renderCommands(commands, { onCommand, onDemo, onUnavailable }) {
+export function renderCommands(commands, { onCommand, onDemo, onUnavailable, onStop = () => {} }) {
   commandBindings.abort();
   commandBindings = new AbortController();
   const activeCount = commands.filter(available).length;
   $('#command-count').textContent = `${activeCount} comandos activos · API`;
 
-  const bindings = [
-    [$('#key-speed'), ['VELOCIDAD', 'SPEED']],
+  bindSingleCommand($('#key-speed'), commands, ['VELOCIDAD', 'SPEED'], onCommand);
+  for (const [button, aliases] of [
     [$('#key-fork-up'), ['SUBIR_HORQUILLA', 'SUBIR', 'RISE', 'LIFT UP']],
     [$('#key-fork-down'), ['BAJAR_HORQUILLA', 'BAJAR', 'LOWER']],
-  ];
-  for (const [button, aliases] of bindings) bindSingleCommand(button, commands, aliases, onCommand);
+  ]) {
+    if (!button) continue;
+    const command = findCommand(commands, aliases);
+    button.disabled = !command;
+    button.dataset.available = String(Boolean(command));
+    button.title = command ? 'Mantén pulsado para mover; suelta para DETENER.' : 'Función no disponible.';
+    if (command) bindHoldCommand(button, command, onCommand, onStop, commandBindings.signal);
+  }
 
   const demoCommand = findCommand(commands, ['DEMO', 'AUTO DEMO']);
   const demoButton = $('#key-demo');

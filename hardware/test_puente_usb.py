@@ -20,6 +20,11 @@ class ProtocolTests(unittest.TestCase):
         self.assertEqual(translate(self.event(comando='ATRAS'),1,{'ADELANTE'},now=101)[0],'X')
     def test_stop_does_not_need_timestamp_or_allowlist(self):
         self.assertEqual(translate({'tipo':'movimiento','id_vehiculo':1,'comando':'DETENER'},1,set())[0],'X')
+    def test_late_movement_does_not_restart_after_stop(self):
+        _,cursor=translate(self.event(comando='DETENER'),1,set(),now=101)
+        command,_=translate(self.event(),1,{'ADELANTE'},now=101,last=cursor)
+        self.assertEqual(command,'X')
+
     def test_demo_steps_and_all_terminal_events(self):
         self.assertEqual(translate(self.event(tipo='demo_movimiento'),1,{'ADELANTE'},now=101)[0],'W')
         for kind in ['demo_fin','demo_error','demo_cancelada']:
@@ -50,18 +55,40 @@ class RelayTests(unittest.IsolatedAsyncioTestCase):
     async def test_slow_pong_does_not_end_valid_channel(self):
         await self.exercise(.85)
 
-    async def exercise(self, latency):
+    async def test_manual_is_renewed_beyond_one_second_without_repeating_start(self):
+        writes = await self.exercise(0, hold_after=1.25)
+        self.assertEqual(writes.count('C W 0'),1)
+        self.assertGreaterEqual(writes.count('R'),5)
+
+    async def test_demo_stops_at_duration_and_is_not_renewed_during_pause(self):
+        writes = await self.exercise(0, hold_after=.4, demo_ms=50)
+        start=writes.index('C W 50')
+        self.assertIn('X',writes[start+1:-1])
+        self.assertNotIn('R',writes)
+
+    async def test_temporary_reservation_failure_stops_without_replaying_on_recovery(self):
+        writes = await self.exercise(0, hold_after=2, transient_error=True)
+        self.assertEqual(writes.count('C W 0'),1)
+        last_arm=len(writes)-1-writes[::-1].index('ARM')
+        self.assertNotIn('R',writes[last_arm+1:])
+        self.assertEqual(writes[-1],'X')
+
+    async def exercise(self, latency, hold_after=0, demo_ms=None, transient_error=False):
         import asyncio, json, time
         from types import SimpleNamespace
         from unittest.mock import patch
-        from puente_usb import relay
+        from puente_usb import relay, ApiFailure
         writes=[]
         class Out:
             serial=None
             def send(self, command): writes.append(command)
         class API:
             origin='https://example.invalid';token='local-test-token-only'
-            def call(self,path):return {'reservada':True,'estado':'ACTIVA'}
+            calls=0
+            def call(self,path):
+                self.calls+=1
+                if transient_error and self.calls==2: raise ApiFailure('Prueba de timeout',transient=True)
+                return {'reservada':True,'estado':'ACTIVA'}
         class WS:
             async def send(self,data):pass
             async def recv(self):return json.dumps({'tipo':'estado_inicial','id_vehiculo':1})
@@ -72,14 +99,35 @@ class RelayTests(unittest.IsolatedAsyncioTestCase):
             def __aiter__(self):return self.events()
             async def events(self):
                 await asyncio.sleep(latency+.25)
-                yield json.dumps({'tipo':'movimiento','id_vehiculo':1,'comando':'ADELANTE','timestamp':datetime.now(timezone.utc).isoformat()})
+                yield json.dumps({'tipo':'demo_movimiento' if demo_ms else 'movimiento','id_vehiculo':1,'comando':'ADELANTE','duracion_ms':demo_ms,'timestamp':datetime.now(timezone.utc).isoformat()})
+                await asyncio.sleep(hold_after)
         class Connection:
             async def __aenter__(self):return WS()
             async def __aexit__(self,*args):pass
         with patch('websockets.asyncio.client.connect',return_value=Connection()):
             with self.assertRaisesRegex(RuntimeError,'cerró el canal'):
                 await relay(API(),SimpleNamespace(unidad=1,permitir=['ADELANTE']),Out())
-        self.assertIn('ARM',writes);self.assertIn('C W',writes);self.assertEqual(writes[-1],'X')
+        self.assertIn('ARM',writes);self.assertIn(f'C W {demo_ms or 0}',writes);self.assertEqual(writes[-1],'X')
+        return writes
+
+class MotionTests(unittest.TestCase):
+    def test_manual_has_no_fixed_one_second_limit(self):
+        from puente_usb import Motion
+        motion=Motion();motion.begin('E',now=1)
+        self.assertFalse(motion.expired(now=100))
+        self.assertTrue(motion.renewable())
+    def test_timed_demo_expires_and_never_renews(self):
+        from puente_usb import Motion
+        motion=Motion();motion.begin('W',1500,now=10)
+        self.assertFalse(motion.expired(now=11.49))
+        self.assertTrue(motion.expired(now=11.5))
+        self.assertFalse(motion.renewable())
+    def test_stop_clears_manual_and_a_new_step_replaces_old_deadline(self):
+        from puente_usb import Motion
+        motion=Motion();motion.begin('W',100,now=10);motion.begin('E',0,now=10.05)
+        self.assertFalse(motion.expired(now=11))
+        motion.clear();self.assertFalse(motion.renewable())
+        self.assertIsNone(motion.command)
 
 class ApiErrors(unittest.TestCase):
     def test_login_401_has_specific_diagnostic(self):

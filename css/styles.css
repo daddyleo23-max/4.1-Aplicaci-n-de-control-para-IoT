@@ -636,3 +636,6 @@ body.control-expanded{overflow:hidden}
   .login-visual img{position:absolute;width:48%;right:5px;bottom:8px;margin:0}
   .account-login .login-visual-copy{display:none}
 }
+
+/* La horquilla responde a mantener/soltar sin desplazar la página táctil. */
+#key-fork-up,#key-fork-down{touch-action:none;user-select:none}
