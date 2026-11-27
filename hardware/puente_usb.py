@@ -102,15 +102,43 @@ class Output:
         self.serial = serial.Serial(self.port,115200,timeout=.2,write_timeout=.3,exclusive=True)
         # Muchas placas reinician al abrir USB. Esperar sólo al protocolo nuevo.
         print(f'Puerto {self.port} abierto a 115200. Pulsa EN/RESET ahora (no BOOT); espero READY IOT43/5 durante 20 s.',flush=True)
-        end = time.monotonic()+20
+        await self.identify(timeout=20)
+    async def identify(self, *, timeout):
+        # readline puede devolver fragmentos al agotar su timeout: acumular hasta NL.
+        end = time.monotonic()+timeout
+        buffer = b''
+        received = 0
+        shown = 0
         while time.monotonic()<end:
-            line = await asyncio.to_thread(self.serial.readline)
-            if line.strip() == b'READY IOT43/5':
-                self.verified = True
-                print('Firmware IOT43/5 identificado; salidas todavía detenidas.',flush=True)
-                return
+            chunk = await asyncio.to_thread(self.serial.readline)
+            if not chunk: continue
+            received += len(chunk)
+            buffer += chunk
+            if len(buffer)>4096:
+                self.close()
+                raise RuntimeError('Se recibieron datos USB sin líneas válidas; revisa puerto y 115200 baudios.')
+            while b'\n' in buffer:
+                line, buffer = buffer.split(b'\n',1)
+                line = line.strip()
+                if line.startswith(b'READY IOT43/'):
+                    text=line.decode('ascii',errors='replace')
+                    print('USB:',text,flush=True)
+                    if line!=b'READY IOT43/5':
+                        self.close()
+                        raise RuntimeError('La placa anunció '+text+'; el puente actual requiere READY IOT43/5. Abre el .ino actualizado, compila y vuelve a cargarlo.')
+                    self.verified = True
+                    print('Firmware IOT43/5 identificado; salidas todavía detenidas.',flush=True)
+                    return
+                if line and shown<8:
+                    # Sólo trazas de arranque conocidas, nunca volcar contenido arbitrario.
+                    if line.startswith((b'ets ',b'rst:',b'configsip:',b'load:',b'entry ',b'mode:')):
+                        print('USB arranque:',line[:120].decode('ascii',errors='replace'),flush=True)
+                    else: print(f'USB: línea recibida ({len(line)} bytes), sin saludo IOT43.',flush=True)
+                    shown += 1
         self.close()
-        raise RuntimeError('No se recibió READY IOT43/5 durante la espera. Esto no demuestra que falte el firmware. Cierra el monitor serie y pulsa EN/RESET cuando el puente indique que abrió el puerto.')
+        if not received:
+            raise RuntimeError('No llegó ningún byte del ESP32. El puerto se abrió, pero no se recibió el arranque al pulsar EN. Revisa que sea el mismo puerto del monitor y que no haya otro monitor abierto.')
+        raise RuntimeError(f'Se recibieron {received} bytes USB, pero no el saludo completo READY IOT43/5. Comprueba la versión que aparece en el monitor serie; no se habilitó movimiento.')
     def send(self, command):
         if self.serial and self.verified: self.serial.write((command+'\n').encode())
         elif self.serial: raise RuntimeError('Firmware sin identificar; no se envían órdenes.')
@@ -237,6 +265,12 @@ async def relay(api, args, output):
 
 async def main(args):
     api = API(args.api)
+    if args.comprobar_usb:
+        output = Output(args.puerto)
+        try: await output.open()
+        finally: output.close()
+        print('Comprobación USB terminada. No se adquirió control ni se enviaron movimientos.')
+        return
     email = input('Correo del comprador dueño: ').strip()
     password = getpass.getpass('Contraseña de aplicación (oculta): ')
     result = await asyncio.to_thread(api.call,'/auth/login',{'correo':email,'password':password})
@@ -262,6 +296,7 @@ def arguments():
     parser.add_argument('--api',default='https://34.194.45.28')
     parser.add_argument('--unidad',type=int,default=1)
     parser.add_argument('--puerto',default='/dev/ttyUSB0')
+    parser.add_argument('--comprobar-usb',action='store_true',help='Sólo identifica el firmware por USB: sin login, ARM ni movimientos.')
     parser.add_argument('--diagnostico',action='store_true',help='Muestra reserva y tipo de eventos, sin tokens ni contraseñas.')
     parser.add_argument('--activar',action='store_true',help='Activa USB; exige el firmware nuevo y área de prueba preparada.')
     parser.add_argument('--permitir',nargs='+',choices=sorted(set(COMMANDS)-{'DETENER'}),default=['ADELANTE'])

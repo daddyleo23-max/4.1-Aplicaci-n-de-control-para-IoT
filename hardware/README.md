@@ -1,6 +1,6 @@
 # Puente USB para el montacargas 4.3
 
-Estado: implementación inicial. Veintiuna pruebas Python y seis pruebas de botones pasan, incluida recepción de una orden nueva y parada al cerrar el canal con conexiones simuladas. El firmware todavía debe compilarse para la placa concreta, cargarse y comprobarse físicamente. No se ha abierto ni escrito el puerto físico durante el desarrollo.
+Estado: implementación inicial. Veinticuatro pruebas Python y seis pruebas de botones pasan, incluida recepción de una orden nueva y parada al cerrar el canal con conexiones simuladas. El firmware todavía debe compilarse para la placa concreta, cargarse y comprobarse físicamente. No se ha abierto ni escrito el puerto físico durante el desarrollo.
 
 ## Recorrido
 
@@ -81,3 +81,14 @@ El puente sigue permitiendo por defecto únicamente ADELANTE y DETENER. Comproba
 Para los lanzadores preconfigurados de Windows y Linux, consultar [ARRANQUE.md](ARRANQUE.md).
 
 La versión IOT43/5 añade velocidad confirmada por el alumno. No informa un nivel numérico de velocidad: solicita el cambio del mando y no presupone cuántos niveles hay ni cuál estaba seleccionado. El puente y el firmware deben actualizarse juntos.
+
+
+## Si el monitor muestra READY pero el puente no lo detecta
+
+Con vehículo apagado y monitor serie cerrado, comprobar únicamente USB, sin login ni acceso a AWS:
+
+```bash
+python3 hardware/puente_usb.py --puerto /dev/ttyUSB0 --comprobar-usb
+```
+
+Pulsar EN/RESET cuando indique que abrió el puerto. Muestra trazas de arranque conocidas, la versión recibida y distingue silencio de USB de un firmware diferente. Acumula fragmentos de lectura hasta completar una línea. No envía ARM ni movimientos; sólo libera las salidas al cerrar si identificó la versión correcta. No aumentar la activación ni repetir la carga sin revisar ese diagnóstico.

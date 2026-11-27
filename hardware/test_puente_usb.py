@@ -48,6 +48,27 @@ class ProtocolTests(unittest.TestCase):
         self.assertIsNone(output.serial)
 
 
+class HandshakeTests(unittest.IsolatedAsyncioTestCase):
+    class Port:
+        def __init__(self, lines): self.lines=iter(lines);self.writes=[];self.closed=False
+        def readline(self): return next(self.lines,b'')
+        def write(self,data): self.writes.append(data)
+        def close(self): self.closed=True
+    async def test_fragmented_greeting_is_identified_without_writes(self):
+        output=Output();port=self.Port([b'READY IOT',b'43/5\r\n']);output.serial=port
+        await output.identify(timeout=1)
+        self.assertTrue(output.verified);self.assertEqual(port.writes,[])
+    async def test_wrong_version_is_reported_without_writing(self):
+        output=Output();port=self.Port([b'READY IOT43/3\r\n']);output.serial=port
+        with self.assertRaisesRegex(RuntimeError,'anunció READY IOT43/3'):
+            await output.identify(timeout=1)
+        self.assertEqual(port.writes,[]);self.assertTrue(port.closed)
+    async def test_silent_port_is_distinguished(self):
+        output=Output();port=self.Port([]);output.serial=port
+        with self.assertRaisesRegex(RuntimeError,'ningún byte'):
+            await output.identify(timeout=.01)
+        self.assertEqual(port.writes,[]);self.assertTrue(port.closed)
+
 class RelayTests(unittest.IsolatedAsyncioTestCase):
     async def test_live_event_is_forwarded_then_stop_on_disconnect(self):
         await self.exercise(0)
