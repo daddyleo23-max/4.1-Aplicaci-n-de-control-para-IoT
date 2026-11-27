@@ -11,5 +11,5 @@ fi
 printf '%s\n' 'Puente para MONT-001: avance, retroceso, ambos giros, pala, velocidad y claxon corto.'
 printf '%s\n' 'La activación USB exige --activar y firmware READY IOT43/6. Sin esa opción sólo simula.'
 exec "$PYTHON_PUENTE" "$DIRECTORIO_PUENTE/puente_usb.py" \
-  --api https://34.194.45.28 --unidad 1 --puerto /dev/ttyUSB0 --diagnostico \
+  --api https://34.194.45.28 --correo comprador.prueba@example.com --usar-llavero --unidad 1 --puerto /dev/ttyUSB0 --diagnostico \
   --permitir ADELANTE ATRAS GIRAR_IZQUIERDA GIRAR_DERECHA SUBIR_HORQUILLA BAJAR_HORQUILLA SONIDO VELOCIDAD "$@"

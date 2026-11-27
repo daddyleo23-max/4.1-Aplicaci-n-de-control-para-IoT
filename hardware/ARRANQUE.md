@@ -57,3 +57,11 @@ El firmware debe actualizarse a IOT43/6 para que funcione con el puente actual. 
 Si una consulta de reserva falla temporalmente, el puente solicita STOP y vuelve a comprobar la reserva; no reanuda la orden anterior. Los errores de permisos y los cierres WSS siguen cerrando el puente. Si la red se pierde antes de poder verificarse el fallo, existe el plazo de detección de hasta 3.5 s más el tiempo del watchdog; no equivale a una parada física instantánea. Soltar en la web depende también de la latencia REST/WSS.
 
 Pruebas locales: `python3 -m unittest discover -s hardware -p 'test_*.py' -q` y `node --test hardware/test_hold_command.mjs`. No sustituyen la compilación para la placa y una prueba física supervisada de mantener/soltar.
+
+## Inicio rápido con llavero Linux
+
+El lanzador preselecciona comprador.prueba@example.com y busca su contraseña en el llavero de la sesión Linux (secret-tool). Para registrarla una vez, sin abrir USB:
+
+    bash hardware/iniciar_puente.sh --guardar-credenciales
+
+Introduce la contraseña de aplicación. Sólo se guarda después de validar login y propiedad de la unidad1. Queda simulando: terminar con Ctrl+C. Para mover físicamente, ejecutar después el comando habitual con --activar y pulsar EN cuando lo solicite. Si el llavero está bloqueado puede pedir desbloquearlo; si no hay credencial, el puente pide la contraseña. Cambiar propietario requiere --correo nuevo@correo y registrar su propia credencial; las credenciales se separan por API, correo y unidad. No se guarda el token entre ejecuciones ni contraseñas en el repositorio. Para actualizar contraseña repetir --guardar-credenciales. Para quitarla, usar la aplicación Contraseñas y claves de Linux y buscar IoT43 puente USB. El administrador inicia sesión en la web; no se usa como propietario del puente.

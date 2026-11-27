@@ -5,6 +5,8 @@ from datetime import datetime, timezone
 import getpass
 import json
 import ssl
+import shutil
+import subprocess
 import time
 import urllib.error
 import urllib.request
@@ -273,6 +275,26 @@ async def relay(api, args, output):
             await asyncio.gather(*tasks,return_exceptions=True)
 
 
+def credential_key(args, email):
+    return ['aplicacion','iot43-puente','api',args.api.rstrip('/'),'correo',email,'unidad',str(args.unidad)]
+
+
+def read_keyring(args, email):
+    if not shutil.which('secret-tool'): return None
+    result = subprocess.run(['secret-tool','lookup',*credential_key(args,email)],capture_output=True,text=True)
+    return result.stdout.rstrip('\n') if result.returncode==0 and result.stdout.rstrip('\n') else None
+
+
+def save_keyring(args, email, password):
+    if not shutil.which('secret-tool'):
+        raise RuntimeError('No está disponible secret-tool para guardar en el llavero de Linux.')
+    result = subprocess.run(['secret-tool','store','--label=IoT43 puente USB',*credential_key(args,email)],
+                            input=password,capture_output=True,text=True)
+    if result.returncode:
+        raise RuntimeError('No se pudo guardar en el llavero. Comprueba que esté desbloqueado.')
+    print('Credencial guardada en el llavero de Linux; no en el proyecto.')
+
+
 async def main(args):
     api = API(args.api)
     if args.comprobar_usb:
@@ -281,10 +303,10 @@ async def main(args):
         finally: output.close()
         print('Comprobación USB terminada. No se adquirió control ni se enviaron movimientos.')
         return
-    email = input('Correo del comprador dueño: ').strip()
-    password = getpass.getpass('Contraseña de aplicación (oculta): ')
+    email = args.correo or input('Correo del comprador dueño: ').strip()
+    password = await asyncio.to_thread(read_keyring,args,email) if args.usar_llavero and not args.guardar_credenciales else None
+    if password is None: password = getpass.getpass('Contraseña de aplicación (oculta): ')
     result = await asyncio.to_thread(api.call,'/auth/login',{'correo':email,'password':password})
-    password = None
     api.token = result.get('access_token','')
     if not api.token: raise RuntimeError('No se obtuvo una sesión válida.')
     output = Output(args.puerto if args.activar else None)
@@ -292,9 +314,13 @@ async def main(args):
         own = await asyncio.to_thread(api.call,'/mis-vehiculos')
         if args.unidad not in [u['id_vehiculo'] for u in own.get('vehiculos',[])]:
             raise RuntimeError('La cuenta debe ser propietaria de la unidad física.')
+        if args.guardar_credenciales:
+            await asyncio.to_thread(save_keyring,args,email,password)
+        password = None
         await output.open()
         await relay(api,args,output)
     finally:
+        password = None
         output.close()
         try: await asyncio.to_thread(api.call,'/auth/logout',{})
         except Exception: pass
@@ -304,6 +330,9 @@ async def main(args):
 def arguments():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--api',default='https://34.194.45.28')
+    parser.add_argument('--correo',help='Correo propietario; no es una contraseña.')
+    parser.add_argument('--usar-llavero',action='store_true',help='Lee la contraseña del llavero Linux; si falta, la solicita.')
+    parser.add_argument('--guardar-credenciales',action='store_true',help='Solicita contraseña y la guarda en el llavero tras validar login y propiedad.')
     parser.add_argument('--unidad',type=int,default=1)
     parser.add_argument('--puerto',default='/dev/ttyUSB0')
     parser.add_argument('--comprobar-usb',action='store_true',help='Sólo identifica el firmware por USB: sin login, ARM ni movimientos.')
