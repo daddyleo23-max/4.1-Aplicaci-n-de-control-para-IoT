@@ -10,8 +10,8 @@ import urllib.error
 import urllib.request
 from urllib.parse import urlsplit
 
-COMMANDS = {'ADELANTE':'W','ATRAS':'S','GIRAR_IZQUIERDA':'A','GIRAR_DERECHA':'D',
-            'SUBIR_HORQUILLA':'E','BAJAR_HORQUILLA':'Q','LUCES':'L','SONIDO':'N','VELOCIDAD':'V','DETENER':'X'}
+COMMANDS = {'ADELANTE':'W','ATRAS':'S','GIRAR_DERECHA':'D',
+            'SUBIR_HORQUILLA':'E','BAJAR_HORQUILLA':'Q','SONIDO':'N','DETENER':'X'}
 STOP_EVENTS = {'demo_fin','demo_cancelada','demo_error'}
 PING_TIMEOUT_S = 3.0
 LEASE_TIMEOUT_S = 3.0
@@ -80,16 +80,16 @@ class Output:
         import serial
         self.serial = serial.Serial(self.port,115200,timeout=.2,write_timeout=.3,exclusive=True)
         # Muchas placas reinician al abrir USB. Esperar sólo al protocolo nuevo.
-        print(f'Puerto {self.port} abierto a 115200. Pulsa EN/RESET ahora (no BOOT); espero READY IOT43/1 durante 20 s.',flush=True)
+        print(f'Puerto {self.port} abierto a 115200. Pulsa EN/RESET ahora (no BOOT); espero READY IOT43/2 durante 20 s.',flush=True)
         end = time.monotonic()+20
         while time.monotonic()<end:
             line = await asyncio.to_thread(self.serial.readline)
-            if line.strip() == b'READY IOT43/1':
+            if line.strip() == b'READY IOT43/2':
                 self.verified = True
-                print('Firmware IOT43/1 identificado; salidas todavía detenidas.',flush=True)
+                print('Firmware IOT43/2 identificado; salidas todavía detenidas.',flush=True)
                 return
         self.close()
-        raise RuntimeError('No se recibió READY IOT43/1 durante la espera. Esto no demuestra que falte el firmware. Cierra el monitor serie y pulsa EN/RESET cuando el puente indique que abrió el puerto.')
+        raise RuntimeError('No se recibió READY IOT43/2 durante la espera. Esto no demuestra que falte el firmware. Cierra el monitor serie y pulsa EN/RESET cuando el puente indique que abrió el puerto.')
     def send(self, command):
         if self.serial and self.verified: self.serial.write((command+'\n').encode())
         elif self.serial: raise RuntimeError('Firmware sin identificar; no se envían órdenes.')

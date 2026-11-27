@@ -24,6 +24,12 @@ class ProtocolTests(unittest.TestCase):
         self.assertEqual(translate(self.event(tipo='demo_movimiento'),1,{'ADELANTE'},now=101)[0],'W')
         for kind in ['demo_fin','demo_error','demo_cancelada']:
             self.assertEqual(translate({'tipo':kind,'id_vehiculo':1},1,set())[0],'X')
+    def test_confirmed_functions_and_unverified_left(self):
+        expected={'ATRAS':'S','GIRAR_DERECHA':'D','SUBIR_HORQUILLA':'E','BAJAR_HORQUILLA':'Q','SONIDO':'N'}
+        for name,letter in expected.items():
+            self.assertEqual(translate(self.event(comando=name),1,{name},now=101)[0],letter)
+        for name in ('GIRAR_IZQUIERDA','LUCES','VELOCIDAD','POWER'):
+            self.assertEqual(translate(self.event(comando=name),1,{name},now=101)[0],'X')
     def test_unknown_firmware_is_never_written_even_on_exit(self):
         class Port:
             def write(self, data): raise AssertionError('No debe escribir al firmware anterior')
