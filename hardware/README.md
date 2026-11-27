@@ -1,6 +1,6 @@
 # Puente USB para el montacargas 4.3
 
-Estado: implementación inicial. Trece pruebas Python pasan, incluida recepción de una orden nueva y parada al cerrar el canal con conexiones simuladas. El firmware todavía debe compilarse para la placa concreta, cargarse y comprobarse físicamente. No se ha abierto ni escrito el puerto físico durante el desarrollo.
+Estado: implementación inicial. Catorce pruebas Python pasan, incluida recepción de una orden nueva y parada al cerrar el canal con conexiones simuladas. El firmware todavía debe compilarse para la placa concreta, cargarse y comprobarse físicamente. No se ha abierto ni escrito el puerto físico durante el desarrollo.
 
 ## Recorrido
 
@@ -75,3 +75,6 @@ python3 hardware/puente_usb.py --unidad 1 --puerto /dev/ttyUSB0 --activar --diag
 ```
 
 El puente sigue permitiendo por defecto únicamente ADELANTE y DETENER. Comprobar cada función física por separado, no una demo completa. La versión de integración conserva el límite de un segundo por orden de movimiento y el watchdog de 800 ms. La corrección de mapa no equivale a una prueba física ya aprobada.
+
+
+Para los lanzadores preconfigurados de Windows y Linux, consultar [ARRANQUE.md](ARRANQUE.md).

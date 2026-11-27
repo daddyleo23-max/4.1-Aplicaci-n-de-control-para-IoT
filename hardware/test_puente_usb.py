@@ -100,4 +100,26 @@ class ApiErrors(unittest.TestCase):
                 API('https://example.invalid').call('/vehiculos/1/control')
         self.assertEqual(call.call_args.kwargs['timeout'],3.0)
 
+class LauncherTests(unittest.TestCase):
+    def test_launcher_preserves_explicit_activation_and_confirmed_commands(self):
+        import json, os, shutil, subprocess, tempfile
+        from pathlib import Path
+        if not shutil.which('bash'): self.skipTest('El lanzador es para Linux/bash')
+        script=Path(__file__).with_name('iniciar_puente.sh')
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp)
+            fake=root/'python-local-test'
+            fake.write_text('#!/usr/bin/env python3\nimport os,sys,json\nif sys.argv[1:2] != ["-c"]:\n open(os.environ["IOT_TEST_ARGS"],"w").write(json.dumps(sys.argv[1:]))\n')
+            fake.chmod(0o700)
+            env={**os.environ,'IOT_BRIDGE_PYTHON':str(fake),'IOT_TEST_ARGS':str(root/'args.json')}
+            for flags in ([],['--activar']):
+                subprocess.run(['bash',str(script),*flags],env=env,check=True,capture_output=True,text=True)
+                args=json.loads((root/'args.json').read_text())
+                self.assertEqual('--activar' in args,bool(flags))
+                self.assertIn('GIRAR_IZQUIERDA',args)
+                self.assertIn('SONIDO',args)
+                self.assertNotIn('POWER',args)
+                self.assertNotIn('VELOCIDAD',args)
+                self.assertEqual(args[args.index('--unidad')+1],'1')
+
 if __name__=='__main__': unittest.main()
